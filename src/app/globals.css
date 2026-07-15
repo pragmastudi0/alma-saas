@@ -1,0 +1,36 @@
+@import '../styles/alma-tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --alma-font-voice: var(--font-instrument-serif), Georgia, serif;
+  --alma-font-ui: var(--font-inter), system-ui, sans-serif;
+}
+
+body {
+  background: var(--alma-bg);
+  color: var(--alma-text);
+  font-family: var(--alma-font-ui);
+  font-size: var(--alma-text-body);
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Voz de alma: serif itálica, solo saludos / títulos / cifras hero */
+.voice {
+  font-family: var(--alma-font-voice);
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
+
+/* Números de dinero y hora: siempre tabulares */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--alma-action);
+  outline-offset: 2px;
+}
