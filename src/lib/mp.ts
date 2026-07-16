@@ -1,35 +1,34 @@
 /**
  * Cliente de Mercado Pago (Checkout Pro) — solo server.
- * Lee MP_ACCESS_TOKEN y MP_WEBHOOK_SECRET del entorno. Nada de secrets en el cliente.
+ * Cada llamada recibe el access_token del VENDEDOR (la cuenta MP del
+ * profesional, vía OAuth — ver mp-oauth.ts): el dinero entra a su cuenta,
+ * no a una cuenta de la plataforma. Nada de secrets en el cliente.
  */
 import crypto from 'node:crypto';
 
 const MP_API = 'https://api.mercadopago.com';
 
-function accessToken(): string {
-  const t = process.env.MP_ACCESS_TOKEN;
-  if (!t) throw new Error('Falta MP_ACCESS_TOKEN en el entorno del server.');
-  return t;
-}
-
-function siteUrl(): string {
+export function siteUrl(): string {
   return (
     process.env.NEXT_PUBLIC_SITE_URL ??
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
   );
 }
 
-/** Crea una preferencia de pago para la seña y devuelve el link (init_point). */
+export type PreferenciaSena = { preferenceId: string; initPoint: string };
+
+/** Crea una preferencia de pago para la seña con la cuenta del profesional. */
 export async function crearPreferenciaSena(args: {
+  accessToken: string;
   appointmentId: string;
   titulo: string;
   monto: number;
-}): Promise<string> {
+}): Promise<PreferenciaSena> {
   const base = siteUrl();
   const res = await fetch(`${MP_API}/checkout/preferences`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${accessToken()}`,
+      Authorization: `Bearer ${args.accessToken}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -55,11 +54,11 @@ export async function crearPreferenciaSena(args: {
   if (!res.ok) {
     throw new Error(`MP preferencia: HTTP ${res.status}`);
   }
-  const data = (await res.json()) as { init_point?: string };
-  if (!data.init_point) {
-    throw new Error('MP preferencia: sin init_point');
+  const data = (await res.json()) as { id?: string; init_point?: string };
+  if (!data.id || !data.init_point) {
+    throw new Error('MP preferencia: respuesta incompleta');
   }
-  return data.init_point;
+  return { preferenceId: data.id, initPoint: data.init_point };
 }
 
 export type PagoMp = {
@@ -69,10 +68,10 @@ export type PagoMp = {
   external_reference: string | null;
 };
 
-/** Trae el detalle de un pago desde MP para saber su estado real. */
-export async function obtenerPago(paymentId: string): Promise<PagoMp> {
+/** Trae el detalle de un pago desde MP (con el token del vendedor dueño del pago). */
+export async function obtenerPago(paymentId: string, accessToken: string): Promise<PagoMp> {
   const res = await fetch(`${MP_API}/v1/payments/${paymentId}`, {
-    headers: { Authorization: `Bearer ${accessToken()}` },
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!res.ok) {
     throw new Error(`MP pago: HTTP ${res.status}`);
@@ -93,6 +92,7 @@ export async function obtenerPago(paymentId: string): Promise<PagoMp> {
 
 /**
  * Verifica la firma del webhook (header x-signature: "ts=...,v1=...").
+ * El secret es de la APLICACIÓN (no del vendedor), así que sigue en env.
  * Manifest de MP: id:<data.id>;request-id:<x-request-id>;ts:<ts>;
  */
 export function verificarFirmaWebhook(args: {

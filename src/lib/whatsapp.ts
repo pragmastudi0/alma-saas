@@ -31,3 +31,14 @@ export function mensajeRecordatorio(nombre: string, fecha: string, hora: string)
 export function mensajeSena(nombre: string, fecha: string, hora: string, link: string): string {
   return `Hola ${nombre}! Para reservar tu turno del ${fecha} a las ${hora}, dejá la seña acá: ${link}`;
 }
+
+/** Pedido de seña por transferencia (fallback cuando no hay Mercado Pago conectado). */
+export function mensajeSenaAlias(
+  nombre: string,
+  fecha: string,
+  hora: string,
+  monto: string,
+  alias: string,
+): string {
+  return `Hola ${nombre}! Para reservar tu turno del ${fecha} a las ${hora}, transferí la seña (${monto}) al alias ${alias} y avisame por acá. ¡Gracias!`;
+}

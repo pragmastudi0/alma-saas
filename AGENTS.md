@@ -25,5 +25,6 @@ SaaS mobile-first: la secretaria virtual del profesional independiente (turnos, 
 
 ## Estado de fases
 
-- F0 Fundaciones: hecha (auth email, esquema con RLS, test de aislamiento, deploy).
-- F1 Agenda → F2 Pacientes → F3 Seña MP → F4 WhatsApp → F5 Caja+Hoy → F6 Pulido: pendientes, en ese orden. No adelantar fases.
+- F0–F6 (Fundaciones, Agenda, Pacientes, Seña MP, WhatsApp, Caja+Hoy, Pulido): hechas y mergeadas en `main`.
+- F3b MP multi-cuenta: cada profesional conecta SU cuenta de Mercado Pago por OAuth (`docs/mercado-pago.md`); tokens cifrados en `alma_mp_accounts` (solo service role); fallback por alias con confirmación manual.
+- Pendientes conocidos: expiración de la seña con liberación del turno; ingreso automático en caja al completar el turno (precio − seña).
