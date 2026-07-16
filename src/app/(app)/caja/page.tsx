@@ -2,6 +2,7 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { CajaResumen } from '@/components/caja-resumen';
 import { MovimientoCard, type MovimientoData } from '@/components/movimiento-card';
 import { DiaNav } from '@/components/dia-nav';
+import { EmptyState } from '@/components/empty-state';
 import { Fab } from '@/components/fab';
 import { addMeses, etiquetaMes, mesActual, rangoMes } from '@/lib/fecha';
 
@@ -51,9 +52,11 @@ export default async function CajaPage({
 
       <section className="mt-6">
         {movimientos.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-[var(--alma-border)] p-8 text-center text-sm text-[var(--alma-text-muted)]">
-            Este mes no tiene movimientos.
-          </p>
+          <EmptyState
+            mensaje="Este mes no tiene movimientos."
+            ctaHref="/caja/nuevo"
+            ctaLabel="Anotar un movimiento"
+          />
         ) : (
           <ul className="flex flex-col gap-2.5">
             {movimientos.map((mv) => (

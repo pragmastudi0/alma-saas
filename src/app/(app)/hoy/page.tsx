@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { getSessionContext } from '@/lib/tenant';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { TurnoCard, type TurnoCardData } from '@/components/turno-card';
+import { EmptyState } from '@/components/empty-state';
+import { Fab } from '@/components/fab';
 import { etiquetaDia, hoyISO } from '@/lib/fecha';
 import { pesos } from '@/lib/format';
 
@@ -48,7 +50,7 @@ export default async function HoyPage() {
   const n = enPie.length;
 
   return (
-    <main className="pb-10">
+    <main className="pb-24">
       <header className="mb-5">
         <h1 className="voice text-[32px] leading-[1.12]">
           {ctx.nombre ? (
@@ -106,9 +108,11 @@ export default async function HoyPage() {
 
       <section className="mt-6">
         {turnos.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-[var(--alma-border)] p-8 text-center text-sm text-[var(--alma-text-muted)]">
-            Hoy no tenés turnos. Disfrutá el día.
-          </p>
+          <EmptyState
+            mensaje="Hoy no tenés turnos. Disfrutá el día."
+            ctaHref={`/agenda/nuevo?d=${dia}`}
+            ctaLabel="Agendar un turno"
+          />
         ) : (
           <ul className="flex flex-col gap-2.5">
             {turnos.map((t) => (
@@ -119,6 +123,8 @@ export default async function HoyPage() {
           </ul>
         )}
       </section>
+
+      <Fab href={`/agenda/nuevo?d=${dia}`} label="Nuevo turno" />
     </main>
   );
 }
