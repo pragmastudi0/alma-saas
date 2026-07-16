@@ -37,6 +37,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         >
           Agenda
         </Link>
+        <Link
+          href="/pacientes"
+          className="text-[var(--alma-text-muted)] transition-colors duration-micro ease-alma hover:text-[var(--alma-text)]"
+        >
+          Pacientes
+        </Link>
       </nav>
       {children}
     </div>
