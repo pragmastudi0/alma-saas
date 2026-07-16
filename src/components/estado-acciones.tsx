@@ -7,7 +7,9 @@ import {
   confirmarSena,
   marcarAusente,
 } from '@/app/(app)/agenda/actions';
-import { SenaLinkBoton } from '@/components/sena-link-boton';
+import { SenaLinkBoton, type WaCtx } from '@/components/sena-link-boton';
+import { WhatsAppLink } from '@/components/whatsapp-link';
+import { mensajeRecordatorio, waLink } from '@/lib/whatsapp';
 import type { AgendaState, Estado } from '@/lib/turno';
 
 type Action = (prev: AgendaState, formData: FormData) => Promise<AgendaState>;
@@ -50,11 +52,11 @@ function Accion({
   );
 }
 
-export function EstadoAcciones({ id, estado }: { id: string; estado: Estado }) {
+export function EstadoAcciones({ id, estado, wa }: { id: string; estado: Estado; wa: WaCtx }) {
   if (estado === 'pendiente_sena') {
     return (
       <div className="flex flex-col gap-2.5">
-        <SenaLinkBoton id={id} />
+        <SenaLinkBoton id={id} wa={wa} />
         <Accion action={confirmarSena} id={id} variant="primary">
           Marcar seña cobrada
         </Accion>
@@ -68,6 +70,9 @@ export function EstadoAcciones({ id, estado }: { id: string; estado: Estado }) {
   if (estado === 'confirmado') {
     return (
       <div className="flex flex-col gap-2.5">
+        <WhatsAppLink href={waLink(wa.telefono, mensajeRecordatorio(wa.nombre, wa.fecha, wa.hora))}>
+          Recordar por WhatsApp
+        </WhatsAppLink>
         <Accion action={completarTurno} id={id} variant="primary">
           Marcar como completado
         </Accion>

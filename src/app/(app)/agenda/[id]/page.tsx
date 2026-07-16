@@ -82,7 +82,16 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
       </section>
 
       <div className="mt-5">
-        <EstadoAcciones id={data.id} estado={estado} />
+        <EstadoAcciones
+          id={data.id}
+          estado={estado}
+          wa={{
+            telefono: pac?.telefono ?? '',
+            nombre: pac?.nombre ?? 'Paciente',
+            fecha: etiquetaDia(data.fecha),
+            hora: horaCorta(data.hora),
+          }}
+        />
       </div>
 
       <div className="mt-5">

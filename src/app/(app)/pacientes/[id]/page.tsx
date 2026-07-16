@@ -3,8 +3,10 @@ import { notFound } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { EstadoBadge } from '@/components/estado-badge';
 import { BackLink } from '@/components/back-link';
+import { WhatsAppLink } from '@/components/whatsapp-link';
 import { horaCorta } from '@/lib/format';
 import { etiquetaDia } from '@/lib/fecha';
+import { waLink } from '@/lib/whatsapp';
 import type { Estado } from '@/lib/turno';
 
 type TurnoRow = {
@@ -68,6 +70,14 @@ export default async function PacienteDetallePage({
           </div>
         ) : null}
       </section>
+
+      {p.telefono ? (
+        <div className="mt-4">
+          <WhatsAppLink href={waLink(p.telefono, `Hola ${p.nombre}!`)}>
+            Escribir por WhatsApp
+          </WhatsAppLink>
+        </div>
+      ) : null}
 
       <div className="mt-4 flex items-center gap-4">
         <Link

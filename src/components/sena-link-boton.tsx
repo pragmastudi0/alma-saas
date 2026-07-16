@@ -2,9 +2,18 @@
 
 import { useActionState, useState } from 'react';
 import { generarLinkSena } from '@/app/(app)/agenda/actions';
+import { WhatsAppLink } from '@/components/whatsapp-link';
+import { mensajeSena, waLink } from '@/lib/whatsapp';
 import type { MpLinkState } from '@/lib/turno';
 
-export function SenaLinkBoton({ id }: { id: string }) {
+export type WaCtx = {
+  telefono: string;
+  nombre: string;
+  fecha: string;
+  hora: string;
+};
+
+export function SenaLinkBoton({ id, wa }: { id: string; wa: WaCtx }) {
   const [state, formAction, pending] = useActionState<MpLinkState, FormData>(generarLinkSena, {});
   const [copiado, setCopiado] = useState(false);
 
@@ -20,7 +29,7 @@ export function SenaLinkBoton({ id }: { id: string }) {
   }
 
   return (
-    <div>
+    <div className="flex flex-col gap-2">
       <form action={formAction}>
         <input type="hidden" name="id" value={id} />
         <button
@@ -33,27 +42,36 @@ export function SenaLinkBoton({ id }: { id: string }) {
       </form>
 
       {state.error && (
-        <p role="alert" className="mt-1.5 text-sm text-[var(--error-600)]">
+        <p role="alert" className="text-sm text-[var(--error-600)]">
           {state.error}
         </p>
       )}
 
       {state.link && (
-        <div className="mt-2 flex items-center gap-2 rounded-md bg-[var(--alma-surface-2)] p-2">
-          <input
-            readOnly
-            value={state.link}
-            aria-label="Link de pago de la seña"
-            className="min-w-0 flex-1 truncate bg-transparent px-1 text-sm outline-none"
-          />
-          <button
-            type="button"
-            onClick={copiar}
-            className="shrink-0 rounded px-2.5 py-1 text-xs font-semibold text-[var(--alma-action)] transition-opacity duration-micro ease-alma hover:opacity-80"
+        <>
+          <div className="flex items-center gap-2 rounded-md bg-[var(--alma-surface-2)] p-2">
+            <input
+              readOnly
+              value={state.link}
+              aria-label="Link de pago de la seña"
+              className="min-w-0 flex-1 truncate bg-transparent px-1 text-sm outline-none"
+            />
+            <button
+              type="button"
+              onClick={copiar}
+              className="shrink-0 rounded px-2.5 py-1 text-xs font-semibold text-[var(--alma-action)] transition-opacity duration-micro ease-alma hover:opacity-80"
+            >
+              {copiado ? 'Copiado' : 'Copiar'}
+            </button>
+          </div>
+
+          <WhatsAppLink
+            href={waLink(wa.telefono, mensajeSena(wa.nombre, wa.fecha, wa.hora, state.link))}
+            variant="primary"
           >
-            {copiado ? 'Copiado' : 'Copiar'}
-          </button>
-        </div>
+            Enviar seña por WhatsApp
+          </WhatsAppLink>
+        </>
       )}
     </div>
   );
