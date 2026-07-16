@@ -2,10 +2,7 @@
 
 import { useActionState } from 'react';
 import type { AuthState } from '@/app/(auth)/actions';
-
-const inputCls =
-  'w-full rounded-md border border-[var(--alma-border)] bg-[var(--alma-bg)] px-3.5 py-3 ' +
-  'outline-none transition-colors duration-micro ease-alma focus:border-[var(--alma-action)]';
+import { inputCls, labelCls } from '@/components/ui/field';
 
 export function AuthForm({
   action,
@@ -28,7 +25,7 @@ export function AuthForm({
       <form action={formAction} className="flex flex-col gap-4">
         {withNombre && (
           <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold text-[var(--alma-text-muted)]">
+            <span className={labelCls}>
               Tu nombre
             </span>
             <input name="nombre" autoComplete="name" placeholder="Ej: Sofi" className={inputCls} />
