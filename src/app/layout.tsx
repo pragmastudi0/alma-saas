@@ -17,6 +17,11 @@ const instrumentSerif = Instrument_Serif({
 export const metadata: Metadata = {
   title: 'alma — tu consultorio, en orden',
   description: 'La secretaria virtual del profesional independiente.',
+  appleWebApp: {
+    capable: true,
+    title: 'alma',
+    statusBarStyle: 'default',
+  },
 };
 
 export const viewport: Viewport = {
