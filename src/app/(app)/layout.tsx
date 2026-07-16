@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Flor } from '@/components/flor';
+import { AppNav } from '@/components/app-nav';
 import { getSessionContext } from '@/lib/tenant';
 import { logout } from '@/app/(auth)/actions';
 
@@ -24,20 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </button>
         </form>
       </div>
-      <nav className="mb-5 flex gap-5 text-sm font-semibold">
-        <Link
-          href="/hoy"
-          className="text-[var(--alma-text-muted)] transition-colors duration-micro ease-alma hover:text-[var(--alma-text)]"
-        >
-          Hoy
-        </Link>
-        <Link
-          href="/agenda"
-          className="text-[var(--alma-text-muted)] transition-colors duration-micro ease-alma hover:text-[var(--alma-text)]"
-        >
-          Agenda
-        </Link>
-      </nav>
+      <AppNav />
       {children}
     </div>
   );

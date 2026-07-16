@@ -15,9 +15,9 @@ type Settings = {
 export default async function NuevoTurnoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ d?: string }>;
+  searchParams: Promise<{ d?: string; p?: string }>;
 }) {
-  const { d } = await searchParams;
+  const { d, p } = await searchParams;
   const dia = d && FECHA.test(d) ? d : hoyISO();
 
   const supabase = await createServerSupabase();
@@ -45,6 +45,7 @@ export default async function NuevoTurnoPage({
           duracion_min: s.duracion_default ?? 45,
           precio: s.precio_default ?? 0,
           sena_monto: s.sena_default ?? 0,
+          patient_id: p,
         }}
       />
     </main>

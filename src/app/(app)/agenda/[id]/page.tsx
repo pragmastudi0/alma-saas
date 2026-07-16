@@ -82,13 +82,33 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
       </section>
 
       <div className="mt-5">
-        <EstadoAcciones id={data.id} estado={estado} />
+        <EstadoAcciones
+          id={data.id}
+          estado={estado}
+          wa={{
+            telefono: pac?.telefono ?? '',
+            nombre: pac?.nombre ?? 'Paciente',
+            fecha: etiquetaDia(data.fecha),
+            hora: horaCorta(data.hora),
+          }}
+        />
       </div>
+
+      {estado === 'completado' && Number(data.precio) > 0 ? (
+        <div className="mt-4">
+          <Link
+            href={`/caja/nuevo?tipo=ingreso&monto=${Number(data.precio)}&cat=Turno&desc=${encodeURIComponent(`Turno ${pac?.nombre ?? ''}`.trim())}`}
+            className="text-sm font-semibold text-[var(--alma-action)] transition-opacity duration-micro ease-alma hover:opacity-80"
+          >
+            Registrar en caja
+          </Link>
+        </div>
+      ) : null}
 
       <div className="mt-5">
         <Link
           href={`/agenda/${data.id}/editar`}
-          className="text-sm font-semibold text-[var(--alma-action)] transition-opacity duration-micro ease-alma hover:opacity-80"
+          className="text-sm font-semibold text-[var(--alma-text-muted)] transition-colors duration-micro ease-alma hover:text-[var(--alma-text)]"
         >
           Editar turno
         </Link>

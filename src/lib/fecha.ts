@@ -36,6 +36,33 @@ export function etiquetaDia(iso: string): string {
   return `${DIAS[dow]} ${d} de ${MESES[m - 1]}`;
 }
 
+/** Mes (YYYY-MM) de una fecha ISO. */
+export function mesDe(iso: string): string {
+  return iso.slice(0, 7);
+}
+
+/** Mes actual (YYYY-MM) en el timezone del profesional. */
+export function mesActual(tz: string = TZ_DEFAULT): string {
+  return hoyISO(tz).slice(0, 7);
+}
+
+/** Suma (o resta) meses a un YYYY-MM. */
+export function addMeses(ym: string, n: number): string {
+  const [y, m] = ym.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1 + n, 1)).toISOString().slice(0, 7);
+}
+
+/** Etiqueta humana del mes: "julio 2026". */
+export function etiquetaMes(ym: string): string {
+  const [y, m] = ym.split('-').map(Number);
+  return `${MESES[m - 1]} ${y}`;
+}
+
+/** Rango [desde, hasta) para filtrar un mes por columna date. */
+export function rangoMes(ym: string): { desde: string; hasta: string } {
+  return { desde: `${ym}-01`, hasta: `${addMeses(ym, 1)}-01` };
+}
+
 /** Etiqueta relativa cálida cuando aplica: "hoy", "mañana", "ayer". */
 export function etiquetaRelativa(iso: string, tz: string = TZ_DEFAULT): string | null {
   const hoy = hoyISO(tz);
