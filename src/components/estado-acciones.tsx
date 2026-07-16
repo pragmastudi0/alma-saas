@@ -7,7 +7,7 @@ import {
   confirmarSena,
   marcarAusente,
 } from '@/app/(app)/agenda/actions';
-import { SenaLinkBoton, type WaCtx } from '@/components/sena-link-boton';
+import { SenaLinkBoton, type CobroSena, type WaCtx } from '@/components/sena-link-boton';
 import { WhatsAppLink } from '@/components/whatsapp-link';
 import { mensajeRecordatorio, waLink } from '@/lib/whatsapp';
 import type { AgendaState, Estado } from '@/lib/turno';
@@ -52,11 +52,21 @@ function Accion({
   );
 }
 
-export function EstadoAcciones({ id, estado, wa }: { id: string; estado: Estado; wa: WaCtx }) {
+export function EstadoAcciones({
+  id,
+  estado,
+  wa,
+  cobro,
+}: {
+  id: string;
+  estado: Estado;
+  wa: WaCtx;
+  cobro: CobroSena;
+}) {
   if (estado === 'pendiente_sena') {
     return (
       <div className="flex flex-col gap-2.5">
-        <SenaLinkBoton id={id} wa={wa} />
+        <SenaLinkBoton id={id} wa={wa} cobro={cobro} />
         <Accion action={confirmarSena} id={id} variant="primary">
           Marcar seña cobrada
         </Accion>

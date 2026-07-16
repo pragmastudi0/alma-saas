@@ -4,8 +4,10 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { createAdminSupabase } from '@/lib/supabase/admin';
 import { getSessionContext } from '@/lib/tenant';
 import { crearPreferenciaSena } from '@/lib/mp';
+import { obtenerCredencialMp } from '@/lib/mp-oauth';
 import type { AgendaState, Estado, MpLinkState } from '@/lib/turno';
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
@@ -133,6 +135,9 @@ export async function editarTurno(_prev: AgendaState, formData: FormData): Promi
       duracion_min: v.duracion_min,
       precio: v.precio,
       sena_monto: v.sena_monto,
+      // El link de seña vigente puede quedar desactualizado (monto/fecha): se regenera.
+      mp_preference_id: null,
+      mp_init_point: null,
     })
     .eq('id', v.id)
     .select('id');
@@ -212,7 +217,8 @@ export async function marcarAusente(_prev: AgendaState, formData: FormData): Pro
 }
 
 /**
- * Genera el link de pago de la seña (Checkout Pro) para mandarle al paciente.
+ * Genera el link de pago de la seña (Checkout Pro) con la cuenta de MP del
+ * profesional, y lo persiste en el turno para poder reenviarlo sin regenerar.
  * El webhook confirma el turno cuando el pago se acredita.
  */
 export async function generarLinkSena(
@@ -230,7 +236,7 @@ export async function generarLinkSena(
   const supabase = await createServerSupabase();
   const { data: turno } = await supabase
     .from('alma_appointments')
-    .select('id, sena_monto, alma_patients(nombre)')
+    .select('id, sena_monto, estado, mp_init_point, alma_patients(nombre)')
     .eq('id', parsed.data.id)
     .maybeSingle();
   if (!turno) {
@@ -241,18 +247,38 @@ export async function generarLinkSena(
   if (sena <= 0) {
     return { error: 'Este turno no tiene seña configurada.' };
   }
+  if (turno.estado !== 'pendiente_sena') {
+    return { error: 'Este turno ya no espera seña.' };
+  }
+
+  // Si el link ya existe, lo reusamos (editar el turno lo invalida).
+  if (turno.mp_init_point) {
+    return { link: turno.mp_init_point };
+  }
+
+  // La cuenta MP del profesional (el dinero entra ahí, no a alma).
+  const admin = createAdminSupabase();
+  const credencial = await obtenerCredencialMp(admin, ctx.tenantId);
+  if (!credencial) {
+    return { error: 'Conectá tu Mercado Pago en Ajustes para cobrar señas con link.' };
+  }
 
   const rel = turno.alma_patients;
   const nombre = (Array.isArray(rel) ? rel[0] : rel)?.nombre ?? 'Paciente';
 
   try {
-    const link = await crearPreferenciaSena({
+    const pref = await crearPreferenciaSena({
+      accessToken: credencial.accessToken,
       appointmentId: turno.id,
       titulo: `Seña — ${nombre}`,
       monto: sena,
     });
-    return { link };
+    await supabase
+      .from('alma_appointments')
+      .update({ mp_preference_id: pref.preferenceId, mp_init_point: pref.initPoint })
+      .eq('id', turno.id);
+    return { link: pref.initPoint };
   } catch {
-    return { error: 'No pudimos generar el link. Revisá la configuración de Mercado Pago.' };
+    return { error: 'No pudimos generar el link. Probá de nuevo en un rato.' };
   }
 }

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { EstadoBadge } from '@/components/estado-badge';
 import { EstadoAcciones } from '@/components/estado-acciones';
+import type { CobroSena } from '@/components/sena-link-boton';
 import { BackLink } from '@/components/back-link';
 import { horaCorta, pesos } from '@/lib/format';
 import { etiquetaDia } from '@/lib/fecha';
@@ -21,13 +22,17 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
   const { id } = await params;
 
   const supabase = await createServerSupabase();
-  const { data } = await supabase
-    .from('alma_appointments')
-    .select(
-      'id, fecha, hora, duracion_min, precio, sena_monto, sena_pagada, estado, alma_patients(nombre, telefono)',
-    )
-    .eq('id', id)
-    .maybeSingle();
+  const [{ data }, { data: cuentaMp }, { data: tenant }] = await Promise.all([
+    supabase
+      .from('alma_appointments')
+      .select(
+        'id, fecha, hora, duracion_min, precio, sena_monto, sena_pagada, estado, mp_init_point, alma_patients(nombre, telefono)',
+      )
+      .eq('id', id)
+      .maybeSingle(),
+    supabase.from('alma_mp_accounts').select('tenant_id').maybeSingle(),
+    supabase.from('alma_tenants').select('settings').maybeSingle(),
+  ]);
 
   if (!data) notFound();
 
@@ -35,6 +40,14 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
   const pac = (Array.isArray(rel) ? rel[0] : rel) as { nombre?: string; telefono?: string } | null;
   const estado = data.estado as Estado;
   const sena = Number(data.sena_monto);
+
+  // Cómo cobra la seña este profesional: MP conectado > alias > nada.
+  const alias = ((tenant?.settings as { alias_mp?: string | null } | null)?.alias_mp ?? '').trim();
+  const cobro: CobroSena = cuentaMp
+    ? { modo: 'mp', initPoint: data.mp_init_point ?? null }
+    : alias
+      ? { modo: 'alias', alias, monto: pesos(sena) }
+      : { modo: 'ninguno' };
 
   return (
     <main className="pb-10">
@@ -85,6 +98,7 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
         <EstadoAcciones
           id={data.id}
           estado={estado}
+          cobro={cobro}
           wa={{
             telefono: pac?.telefono ?? '',
             nombre: pac?.nombre ?? 'Paciente',
