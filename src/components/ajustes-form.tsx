@@ -85,13 +85,16 @@ export function AjustesForm({
       </div>
 
       <label className="block border-t border-[var(--alma-border)] pt-4">
-        <span className={labelCls}>Alias de Mercado Pago</span>
+        <span className={labelCls}>Alias para transferencias</span>
         <input
           name="alias_mp"
           defaultValue={defaults.alias_mp}
           placeholder="tu.alias.mp"
           className={inputCls}
         />
+        <span className="mt-1.5 block text-xs text-[var(--alma-text-muted)]">
+          Si no conectás Mercado Pago, la seña se pide por transferencia a este alias.
+        </span>
       </label>
 
       <label className="block border-t border-[var(--alma-border)] pt-4">

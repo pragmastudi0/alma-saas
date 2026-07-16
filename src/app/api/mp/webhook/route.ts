@@ -1,11 +1,13 @@
 import { type NextRequest } from 'next/server';
 import { obtenerPago, verificarFirmaWebhook } from '@/lib/mp';
+import { credencialPorCollector } from '@/lib/mp-oauth';
 import { registrarPagoSena } from '@/lib/mp-webhook';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 
 /**
- * Webhook de Mercado Pago. Recibe la notificación de pago, valida la firma,
- * consulta el pago real y registra la seña de forma idempotente.
+ * Webhook de Mercado Pago (multi-vendedor). La notificación trae el user_id
+ * del vendedor (collector): con él resolvemos la cuenta conectada y su token
+ * para consultar el pago real, y registramos la seña de forma idempotente.
  * Nunca logueamos datos del pago ni del paciente.
  */
 export async function POST(req: NextRequest) {
@@ -14,16 +16,23 @@ export async function POST(req: NextRequest) {
   // MP manda los datos por query y/o por body JSON.
   let bodyDataId: string | null = null;
   let bodyType: string | null = null;
+  let bodyUserId: string | null = null;
   try {
-    const body = (await req.json()) as { type?: string; data?: { id?: string | number } };
+    const body = (await req.json()) as {
+      type?: string;
+      data?: { id?: string | number };
+      user_id?: string | number;
+    };
     bodyType = body?.type ?? null;
     bodyDataId = body?.data?.id != null ? String(body.data.id) : null;
+    bodyUserId = body?.user_id != null ? String(body.user_id) : null;
   } catch {
     // sin body JSON: seguimos con los query params
   }
 
   const dataId = searchParams.get('data.id') ?? searchParams.get('id') ?? bodyDataId;
   const tipo = searchParams.get('type') ?? searchParams.get('topic') ?? bodyType;
+  const userId = searchParams.get('user_id') ?? bodyUserId;
 
   // Firma primero: si no valida, cortamos.
   const firmaOk = verificarFirmaWebhook({
@@ -39,22 +48,36 @@ export async function POST(req: NextRequest) {
   if (tipo && tipo !== 'payment') {
     return new Response('ignorado', { status: 200 });
   }
-  if (!dataId) {
-    return new Response('sin id', { status: 200 });
+  if (!dataId || !userId) {
+    return new Response('sin datos', { status: 200 });
+  }
+
+  const collectorId = Number(userId);
+  if (!Number.isFinite(collectorId)) {
+    return new Response('ignorado', { status: 200 });
   }
 
   try {
-    const pago = await obtenerPago(dataId);
+    const admin = createAdminSupabase();
+
+    // ¿De qué profesional es esta cuenta de MP?
+    const credencial = await credencialPorCollector(admin, collectorId);
+    if (!credencial) {
+      // Cuenta no conectada a ningún tenant: no es nuestro.
+      return new Response('sin cuenta', { status: 200 });
+    }
+
+    const pago = await obtenerPago(dataId, credencial.accessToken);
     if (!pago.external_reference) {
       return new Response('sin referencia', { status: 200 });
     }
 
-    const admin = createAdminSupabase();
     await registrarPagoSena(admin, {
       mpId: pago.id,
       status: pago.status,
       monto: pago.transaction_amount,
       appointmentId: pago.external_reference,
+      tenantId: credencial.tenantId,
       raw: pago,
     });
 

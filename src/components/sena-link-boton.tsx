@@ -1,9 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState, useState } from 'react';
 import { generarLinkSena } from '@/app/(app)/agenda/actions';
 import { WhatsAppLink } from '@/components/whatsapp-link';
-import { mensajeSena, waLink } from '@/lib/whatsapp';
+import { mensajeSena, mensajeSenaAlias, waLink } from '@/lib/whatsapp';
 import type { MpLinkState } from '@/lib/turno';
 
 export type WaCtx = {
@@ -13,8 +14,50 @@ export type WaCtx = {
   hora: string;
 };
 
-export function SenaLinkBoton({ id, wa }: { id: string; wa: WaCtx }) {
-  const [state, formAction, pending] = useActionState<MpLinkState, FormData>(generarLinkSena, {});
+/** Cómo cobra la seña este tenant: link de MP, transferencia al alias, o nada configurado. */
+export type CobroSena =
+  | { modo: 'mp'; initPoint: string | null }
+  | { modo: 'alias'; alias: string; monto: string }
+  | { modo: 'ninguno' };
+
+export function SenaLinkBoton({ id, wa, cobro }: { id: string; wa: WaCtx; cobro: CobroSena }) {
+  if (cobro.modo === 'mp') {
+    return <LinkMp id={id} wa={wa} initPoint={cobro.initPoint} />;
+  }
+
+  if (cobro.modo === 'alias') {
+    return (
+      <div className="flex flex-col gap-2">
+        <WhatsAppLink
+          href={waLink(wa.telefono, mensajeSenaAlias(wa.nombre, wa.fecha, wa.hora, cobro.monto, cobro.alias))}
+          variant="primary"
+        >
+          Pedir seña por WhatsApp
+        </WhatsAppLink>
+        <p className="text-sm text-[var(--alma-text-muted)]">
+          Cobrás por transferencia al alias <span className="font-semibold">{cobro.alias}</span>.
+          Cuando llegue, marcá la seña como cobrada.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <p className="text-sm text-[var(--alma-text-muted)]">
+      Para pedir la seña,{' '}
+      <Link href="/ajustes" className="font-semibold text-[var(--alma-action)]">
+        conectá tu Mercado Pago o cargá tu alias en Ajustes
+      </Link>
+      .
+    </p>
+  );
+}
+
+function LinkMp({ id, wa, initPoint }: { id: string; wa: WaCtx; initPoint: string | null }) {
+  const [state, formAction, pending] = useActionState<MpLinkState, FormData>(
+    generarLinkSena,
+    initPoint ? { link: initPoint } : {},
+  );
   const [copiado, setCopiado] = useState(false);
 
   async function copiar() {
@@ -30,16 +73,18 @@ export function SenaLinkBoton({ id, wa }: { id: string; wa: WaCtx }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <form action={formAction}>
-        <input type="hidden" name="id" value={id} />
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-full rounded-md border border-[var(--alma-border)] px-4 py-3 font-semibold text-[var(--alma-text-muted)] transition-colors duration-micro ease-alma hover:text-[var(--alma-text)] disabled:opacity-40"
-        >
-          {pending ? 'Generando…' : 'Generar link de seña'}
-        </button>
-      </form>
+      {!state.link && (
+        <form action={formAction}>
+          <input type="hidden" name="id" value={id} />
+          <button
+            type="submit"
+            disabled={pending}
+            className="w-full rounded-md border border-[var(--alma-border)] px-4 py-3 font-semibold text-[var(--alma-text-muted)] transition-colors duration-micro ease-alma hover:text-[var(--alma-text)] disabled:opacity-40"
+          >
+            {pending ? 'Generando…' : 'Generar link de seña'}
+          </button>
+        </form>
+      )}
 
       {state.error && (
         <p role="alert" className="text-sm text-[var(--error-600)]">

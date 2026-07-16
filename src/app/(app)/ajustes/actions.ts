@@ -1,9 +1,12 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { createAdminSupabase } from '@/lib/supabase/admin';
 import { getSessionContext } from '@/lib/tenant';
+import { desconectarCuentaMp } from '@/lib/mp-oauth';
 import type { AjustesState } from '@/lib/ajustes';
 import type { DisponibilidadDia, DisponibilidadState } from '@/lib/disponibilidad';
 import { SLUG_RE } from '@/lib/slug';
@@ -71,6 +74,18 @@ export async function guardarAjustes(
   revalidatePath('/ajustes');
   revalidatePath('/hoy');
   return { info: 'Guardado.' };
+}
+
+/** Desconecta la cuenta de Mercado Pago del tenant (borra sus credenciales). */
+export async function desconectarMp(): Promise<void> {
+  const ctx = await getSessionContext();
+  if (!ctx) redirect('/login');
+
+  const admin = createAdminSupabase();
+  await desconectarCuentaMp(admin, ctx.tenantId);
+
+  revalidatePath('/ajustes');
+  redirect('/ajustes?mp=desconectado');
 }
 
 const HORA = /^\d{2}:\d{2}$/;

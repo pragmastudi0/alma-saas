@@ -25,12 +25,15 @@ export default async function TurnoPublicoPage({
   const admin = createAdminSupabase();
   // Solo el turno del tenant del slug; el uuid es inadivinable y no exponemos
   // ningún dato personal en esta página.
-  const { data: turno } = await admin
-    .from('alma_appointments')
-    .select('id, fecha, hora, estado, sena_monto, sena_pagada')
-    .eq('id', id)
-    .eq('tenant_id', tenant.id)
-    .maybeSingle();
+  const [{ data: turno }, { data: cuentaMp }] = await Promise.all([
+    admin
+      .from('alma_appointments')
+      .select('id, fecha, hora, estado, sena_monto, sena_pagada')
+      .eq('id', id)
+      .eq('tenant_id', tenant.id)
+      .maybeSingle(),
+    admin.from('alma_mp_accounts').select('tenant_id').eq('tenant_id', tenant.id).maybeSingle(),
+  ]);
   if (!turno) notFound();
 
   const sena = Number(turno.sena_monto);
@@ -41,6 +44,7 @@ export default async function TurnoPublicoPage({
   );
 
   if (turno.estado === 'pendiente_sena') {
+    const alias = tenant.settings.alias_mp;
     return (
       <div className="flex flex-col gap-4">
         <div>
@@ -51,10 +55,27 @@ export default async function TurnoPublicoPage({
             <span className="tnum font-medium">{pesos(sena)}</span>.
           </p>
         </div>
-        <PagarSenaBoton slug={slug} id={turno.id} />
-        <p className="text-center text-xs text-[var(--alma-text-muted)]">
-          ¿Ya pagaste? Puede tardar unos segundos en acreditarse — actualizá esta página.
-        </p>
+        {cuentaMp ? (
+          <>
+            <PagarSenaBoton slug={slug} id={turno.id} />
+            <p className="text-center text-xs text-[var(--alma-text-muted)]">
+              ¿Ya pagaste? Puede tardar unos segundos en acreditarse — actualizá esta página.
+            </p>
+          </>
+        ) : alias ? (
+          // Sin cuenta MP conectada: seña por transferencia al alias, confirmación manual.
+          <div className="rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] p-4">
+            <p className="text-sm text-[var(--alma-text-muted)]">Transferí la seña al alias</p>
+            <p className="mt-1 select-all text-[17px] font-semibold">{alias}</p>
+            <p className="mt-2 text-xs text-[var(--alma-text-muted)]">
+              Cuando {tenant.nombre} vea la transferencia, te confirma el turno.
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--alma-text-muted)]">
+            {tenant.nombre} te va a escribir para coordinar la seña.
+          </p>
+        )}
       </div>
     );
   }

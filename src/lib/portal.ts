@@ -14,6 +14,7 @@ export type TenantPublico = {
     precio_default?: number;
     sena_default?: number;
     duracion_default?: number;
+    alias_mp?: string | null;
   };
 };
 

@@ -2,7 +2,9 @@
 
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { crearPreferenciaSena, siteUrl } from '@/lib/mp';
+import { obtenerCredencialMp } from '@/lib/mp-oauth';
 import { getTenantPorSlug, type ReservaState } from '@/lib/portal';
 import { crearReservaPublica } from '@/lib/reserva';
 import { SLUG_RE } from '@/lib/slug';
@@ -30,23 +32,34 @@ function urlTurno(slug: string, id: string): string {
   return `${siteUrl()}/t/${slug}/turno/${id}`;
 }
 
-/** Crea el link de pago de la seña con vuelta a la página pública del turno. */
-async function linkDeSena(args: {
-  slug: string;
-  turnoId: string;
-  nombre: string;
-  monto: number;
-}): Promise<string | null> {
+/**
+ * Crea el link de pago de la seña con la cuenta MP del profesional y vuelta a
+ * la página pública del turno. Lo persiste en el turno para poder reusarlo.
+ * null si el profesional no conectó su MP o si MP falla: el turno igual queda
+ * reservado y la página del turno resuelve (reintento o seña por alias).
+ */
+async function linkDeSena(
+  admin: SupabaseClient,
+  args: { slug: string; tenantId: string; turnoId: string; nombre: string; monto: number },
+): Promise<string | null> {
+  const credencial = await obtenerCredencialMp(admin, args.tenantId);
+  if (!credencial) return null;
+
   const vuelta = urlTurno(args.slug, args.turnoId);
   try {
-    return await crearPreferenciaSena({
+    const pref = await crearPreferenciaSena({
+      accessToken: credencial.accessToken,
       appointmentId: args.turnoId,
       titulo: `Seña — ${args.nombre}`,
       monto: args.monto,
       backUrls: { success: vuelta, failure: vuelta, pending: vuelta },
     });
+    await admin
+      .from('alma_appointments')
+      .update({ mp_preference_id: pref.preferenceId, mp_init_point: pref.initPoint })
+      .eq('id', args.turnoId);
+    return pref.initPoint;
   } catch {
-    // Si MP falla, el turno igual queda reservado: la página del turno reintenta.
     return null;
   }
 }
@@ -89,8 +102,9 @@ export async function reservarTurno(
 
   // redirect() lanza: siempre fuera de try/catch.
   if (resultado.estado === 'pendiente_sena') {
-    const link = await linkDeSena({
+    const link = await linkDeSena(admin, {
       slug: v.slug,
+      tenantId: tenant.id,
       turnoId: resultado.turnoId,
       nombre: v.nombre,
       monto: resultado.senaMonto,
@@ -121,7 +135,7 @@ export async function pagarSena(_prev: ReservaState, formData: FormData): Promis
   const admin = createAdminSupabase();
   const { data: turno } = await admin
     .from('alma_appointments')
-    .select('id, estado, sena_monto, alma_patients(nombre)')
+    .select('id, estado, sena_monto, mp_init_point, alma_patients(nombre)')
     .eq('id', v.id)
     .eq('tenant_id', tenant.id)
     .maybeSingle();
@@ -132,11 +146,17 @@ export async function pagarSena(_prev: ReservaState, formData: FormData): Promis
     return { error: 'Este turno no tiene una seña pendiente.' };
   }
 
+  // Si el link ya existe, se reusa (editar el turno lo invalida).
+  if (turno.mp_init_point) {
+    redirect(turno.mp_init_point);
+  }
+
   const rel = turno.alma_patients;
   const nombre = (Array.isArray(rel) ? rel[0] : rel)?.nombre ?? 'Paciente';
 
-  const link = await linkDeSena({
+  const link = await linkDeSena(admin, {
     slug: v.slug,
+    tenantId: tenant.id,
     turnoId: turno.id,
     nombre,
     monto: Number(turno.sena_monto),

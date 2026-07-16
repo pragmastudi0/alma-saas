@@ -1,13 +1,15 @@
 /**
- * F3 · Idempotencia del webhook de Mercado Pago.
+ * F3 · Idempotencia del webhook de Mercado Pago (multi-vendedor).
  *
  * Corre contra el proyecto Supabase real. Verifica que registrar el mismo pago
- * dos veces no duplica filas en alma_payments ni re-confirma el turno, y que un
- * pago no aprobado no confirma.
+ * dos veces no duplica filas en alma_payments ni re-confirma el turno, que un
+ * pago no aprobado no confirma, que un pago de una cuenta MP ajena al turno se
+ * ignora, y que la seña acreditada asienta el ingreso en caja una sola vez.
  *
  * Requiere: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
  * SUPABASE_SERVICE_ROLE_KEY (solo local/CI, nunca en el cliente).
  */
+import crypto from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { registrarPagoSena } from '../src/lib/mp-webhook';
@@ -98,6 +100,7 @@ describe('idempotencia del webhook MP', () => {
       status: 'approved',
       monto: 5000,
       appointmentId: turnoId,
+      tenantId,
       raw: { id: mpId, status: 'approved' },
     });
     expect(primero.registrado).toBe(true);
@@ -113,12 +116,24 @@ describe('idempotencia del webhook MP', () => {
     expect(t1?.sena_pagada).toBe(true);
     expect(t1?.mp_payment_id).toBe(mpId);
 
+    // la seña acreditada entró sola a la caja
+    const { data: caja1 } = await admin
+      .from('alma_cash_entries')
+      .select('id, tipo, categoria, monto')
+      .eq('tenant_id', tenantId)
+      .eq('appointment_id', turnoId);
+    expect(caja1).toHaveLength(1);
+    expect(caja1![0].tipo).toBe('ingreso');
+    expect(caja1![0].categoria).toBe('Seña');
+    expect(Number(caja1![0].monto)).toBe(5000);
+
     // segunda notificación con el mismo pago: no registra ni re-confirma
     const segundo = await registrarPagoSena(admin, {
       mpId,
       status: 'approved',
       monto: 5000,
       appointmentId: turnoId,
+      tenantId,
       raw: { id: mpId, status: 'approved' },
     });
     expect(segundo.registrado).toBe(false);
@@ -131,6 +146,46 @@ describe('idempotencia del webhook MP', () => {
       .eq('tenant_id', tenantId)
       .eq('mp_id', mpId);
     expect(count).toBe(1);
+
+    // y una sola entrada de caja (la transición no se repite)
+    const { count: cajaCount } = await admin
+      .from('alma_cash_entries')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .eq('appointment_id', turnoId);
+    expect(cajaCount).toBe(1);
+  });
+
+  it('un pago de una cuenta MP ajena al turno se ignora', async () => {
+    const turnoId = await nuevoTurno('10:00');
+    const mpId = `mp-${Date.now()}-x`;
+
+    // El collector del pago pertenece a OTRO tenant: no registra ni confirma.
+    const res = await registrarPagoSena(admin, {
+      mpId,
+      status: 'approved',
+      monto: 5000,
+      appointmentId: turnoId,
+      tenantId: crypto.randomUUID(),
+      raw: { id: mpId, status: 'approved' },
+    });
+    expect(res.registrado).toBe(false);
+    expect(res.confirmado).toBe(false);
+
+    const { data: t } = await admin
+      .from('alma_appointments')
+      .select('estado, sena_pagada')
+      .eq('id', turnoId)
+      .single();
+    expect(t?.estado).toBe('pendiente_sena');
+    expect(t?.sena_pagada).toBe(false);
+
+    const { count } = await admin
+      .from('alma_payments')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .eq('mp_id', mpId);
+    expect(count).toBe(0);
   });
 
   it('un pago no aprobado no confirma el turno', async () => {
@@ -142,6 +197,7 @@ describe('idempotencia del webhook MP', () => {
       status: 'pending',
       monto: 5000,
       appointmentId: turnoId,
+      tenantId,
       raw: { id: mpId, status: 'pending' },
     });
     expect(res.registrado).toBe(true);

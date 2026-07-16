@@ -2,16 +2,11 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { AjustesForm } from '@/components/ajustes-form';
 import { DisponibilidadForm } from '@/components/disponibilidad-form';
 import { LinkPublico } from '@/components/link-publico';
+import { MpConexion } from '@/components/mp-conexion';
 import type { DisponibilidadDia } from '@/lib/disponibilidad';
+import { siteUrl } from '@/lib/mp';
 import { slugificar } from '@/lib/slug';
 import { guardarAjustes, guardarDisponibilidad } from './actions';
-
-function siteUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-  );
-}
 
 type Settings = {
   precio_default?: number;
@@ -20,17 +15,32 @@ type Settings = {
   alias_mp?: string | null;
 };
 
-export default async function AjustesPage() {
+const MENSAJES_MP: Record<string, { texto: string; error?: boolean }> = {
+  conectado: { texto: 'Listo. Tu Mercado Pago quedó conectado.' },
+  desconectado: { texto: 'Tu Mercado Pago quedó desconectado.' },
+  en_uso: { texto: 'Esa cuenta de Mercado Pago ya está conectada a otro espacio.', error: true },
+  error: { texto: 'No pudimos conectar tu Mercado Pago. Probá de nuevo.', error: true },
+  sin_config: { texto: 'Falta configurar la aplicación de Mercado Pago en el server.', error: true },
+};
+
+export default async function AjustesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mp?: string }>;
+}) {
+  const { mp } = await searchParams;
   const supabase = await createServerSupabase();
-  const [{ data: tenant }, { data: dispo }] = await Promise.all([
+  const [{ data: tenant }, { data: dispo }, { data: cuentaMp }] = await Promise.all([
     supabase.from('alma_tenants').select('nombre, profesion, settings, slug').maybeSingle(),
     supabase
       .from('alma_availability')
       .select('dia_semana, hora_desde, hora_hasta')
       .order('dia_semana'),
+    supabase.from('alma_mp_accounts').select('collector_id, connected_at').maybeSingle(),
   ]);
 
   const s = (tenant?.settings ?? {}) as Settings;
+  const aviso = mp ? MENSAJES_MP[mp] : undefined;
 
   // Postgres devuelve time como 'HH:MM:SS'; los inputs time esperan 'HH:MM'.
   const disponibilidad: DisponibilidadDia[] = (dispo ?? []).map((d) => ({
@@ -44,6 +54,26 @@ export default async function AjustesPage() {
       <header className="mb-5">
         <h1 className="text-[22px] font-semibold">Ajustes</h1>
       </header>
+
+      {aviso && (
+        <p
+          role={aviso.error ? 'alert' : 'status'}
+          className={`mb-4 rounded-md px-3.5 py-2.5 text-sm font-medium ${
+            aviso.error
+              ? 'bg-[var(--error-soft)] text-[var(--error-600)]'
+              : 'bg-[var(--success-soft)] text-[var(--success-600)]'
+          }`}
+        >
+          {aviso.texto}
+        </p>
+      )}
+
+      <section className="mb-6 rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[.08em] text-[var(--alma-text-muted)]">
+          Cobros · Mercado Pago
+        </p>
+        <MpConexion cuenta={cuentaMp ?? null} />
+      </section>
 
       <AjustesForm
         action={guardarAjustes}
