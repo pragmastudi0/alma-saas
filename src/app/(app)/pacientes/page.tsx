@@ -1,5 +1,6 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 import { PacienteCard, type PacienteCardData } from '@/components/paciente-card';
+import { EmptyState } from '@/components/empty-state';
 import { Fab } from '@/components/fab';
 import { inputCls } from '@/components/ui/field';
 
@@ -43,9 +44,15 @@ export default async function PacientesPage({
       </form>
 
       {pacientes.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-[var(--alma-border)] p-8 text-center text-sm text-[var(--alma-text-muted)]">
-          {term ? 'No encontramos a nadie con ese nombre.' : 'Todavía no cargaste pacientes.'}
-        </p>
+        term ? (
+          <EmptyState mensaje="No encontramos a nadie con ese nombre." />
+        ) : (
+          <EmptyState
+            mensaje="Todavía no cargaste pacientes."
+            ctaHref="/pacientes/nuevo"
+            ctaLabel="Cargar el primer paciente"
+          />
+        )
       ) : (
         <ul className="flex flex-col gap-2.5">
           {pacientes.map((p) => (

@@ -15,7 +15,7 @@ export function AppNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="mb-5 flex gap-5 overflow-x-auto text-sm font-semibold">
+    <nav className="mb-5 hidden gap-5 overflow-x-auto text-sm font-semibold md:flex">
       {LINKS.map((l) => {
         const activo = pathname === l.href || pathname.startsWith(l.href + '/');
         return (

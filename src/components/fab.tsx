@@ -1,24 +1,18 @@
 import Link from 'next/link';
+import { IconoMas } from '@/components/icons';
 
+/**
+ * Botón flotante extendido: ícono + texto, para que se entienda qué crea.
+ * En mobile flota arriba de la barra de secciones; en md+ va a la esquina.
+ */
 export function Fab({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      aria-label={label}
-      className="fixed bottom-6 right-6 z-[var(--alma-z-fab)] flex h-14 w-14 items-center justify-center rounded-full bg-[var(--alma-action)] text-[var(--alma-on-action)] shadow-brand transition-transform duration-micro ease-alma hover:scale-105 active:scale-95"
+      className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[var(--alma-z-fab)] flex h-14 items-center gap-2 rounded-full bg-[var(--alma-action)] pl-5 pr-6 text-[var(--alma-on-action)] shadow-brand transition-transform duration-micro ease-alma hover:scale-105 active:scale-95 md:bottom-6 md:right-6"
     >
-      <svg
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        aria-hidden="true"
-      >
-        <path d="M12 5v14M5 12h14" />
-      </svg>
+      <IconoMas className="h-5 w-5" />
+      <span className="text-sm font-semibold">{label}</span>
     </Link>
   );
 }

@@ -1,6 +1,7 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 import { DiaNav } from '@/components/dia-nav';
 import { TurnoCard, type TurnoCardData } from '@/components/turno-card';
+import { EmptyState } from '@/components/empty-state';
 import { Fab } from '@/components/fab';
 import { addDias, etiquetaDia, etiquetaRelativa, hoyISO } from '@/lib/fecha';
 
@@ -45,9 +46,11 @@ export default async function AgendaPage({
       />
 
       {turnos.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-[var(--alma-border)] p-8 text-center text-sm text-[var(--alma-text-muted)]">
-          Este día está libre.
-        </p>
+        <EmptyState
+          mensaje="Este día está libre."
+          ctaHref={`/agenda/nuevo?d=${dia}`}
+          ctaLabel="Agendar un turno"
+        />
       ) : (
         <ul className="flex flex-col gap-2.5">
           {turnos.map((t) => (
