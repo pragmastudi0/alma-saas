@@ -5,7 +5,8 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { getSessionContext } from '@/lib/tenant';
-import type { AgendaState, Estado } from '@/lib/turno';
+import { crearPreferenciaSena } from '@/lib/mp';
+import type { AgendaState, Estado, MpLinkState } from '@/lib/turno';
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const HORA = /^\d{2}:\d{2}$/;
@@ -208,4 +209,50 @@ export async function cancelarTurno(_prev: AgendaState, formData: FormData): Pro
 /** confirmado → ausente. */
 export async function marcarAusente(_prev: AgendaState, formData: FormData): Promise<AgendaState> {
   return transicionar(formData, ['confirmado'], { estado: 'ausente' });
+}
+
+/**
+ * Genera el link de pago de la seña (Checkout Pro) para mandarle al paciente.
+ * El webhook confirma el turno cuando el pago se acredita.
+ */
+export async function generarLinkSena(
+  _prev: MpLinkState,
+  formData: FormData,
+): Promise<MpLinkState> {
+  const ctx = await getSessionContext();
+  if (!ctx) redirect('/login');
+
+  const parsed = idSchema.safeParse({ id: formData.get('id') });
+  if (!parsed.success) {
+    return { error: 'Turno inválido.' };
+  }
+
+  const supabase = await createServerSupabase();
+  const { data: turno } = await supabase
+    .from('alma_appointments')
+    .select('id, sena_monto, alma_patients(nombre)')
+    .eq('id', parsed.data.id)
+    .maybeSingle();
+  if (!turno) {
+    return { error: 'No encontramos el turno.' };
+  }
+
+  const sena = Number(turno.sena_monto);
+  if (sena <= 0) {
+    return { error: 'Este turno no tiene seña configurada.' };
+  }
+
+  const rel = turno.alma_patients;
+  const nombre = (Array.isArray(rel) ? rel[0] : rel)?.nombre ?? 'Paciente';
+
+  try {
+    const link = await crearPreferenciaSena({
+      appointmentId: turno.id,
+      titulo: `Seña — ${nombre}`,
+      monto: sena,
+    });
+    return { link };
+  } catch {
+    return { error: 'No pudimos generar el link. Revisá la configuración de Mercado Pago.' };
+  }
 }

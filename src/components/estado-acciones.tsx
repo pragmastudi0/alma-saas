@@ -7,6 +7,7 @@ import {
   confirmarSena,
   marcarAusente,
 } from '@/app/(app)/agenda/actions';
+import { SenaLinkBoton } from '@/components/sena-link-boton';
 import type { AgendaState, Estado } from '@/lib/turno';
 
 type Action = (prev: AgendaState, formData: FormData) => Promise<AgendaState>;
@@ -53,6 +54,7 @@ export function EstadoAcciones({ id, estado }: { id: string; estado: Estado }) {
   if (estado === 'pendiente_sena') {
     return (
       <div className="flex flex-col gap-2.5">
+        <SenaLinkBoton id={id} />
         <Accion action={confirmarSena} id={id} variant="primary">
           Marcar seña cobrada
         </Accion>

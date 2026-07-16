@@ -3,3 +3,5 @@
 export type Estado = 'pendiente_sena' | 'confirmado' | 'completado' | 'cancelado' | 'ausente';
 
 export type AgendaState = { error?: string; info?: string };
+
+export type MpLinkState = { error?: string; link?: string };
