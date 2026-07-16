@@ -4,6 +4,7 @@ import { getSessionContext } from '@/lib/tenant';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { TurnoCard, type TurnoCardData } from '@/components/turno-card';
 import { etiquetaDia, hoyISO } from '@/lib/fecha';
+import { pesos } from '@/lib/format';
 
 function nombrePaciente(rel: unknown): string {
   const p = Array.isArray(rel) ? rel[0] : rel;
@@ -16,11 +17,22 @@ export default async function HoyPage() {
 
   const dia = hoyISO();
   const supabase = await createServerSupabase();
-  const { data } = await supabase
-    .from('alma_appointments')
-    .select('id, hora, duracion_min, precio, estado, alma_patients(nombre)')
-    .eq('fecha', dia)
-    .order('hora', { ascending: true });
+  const [{ data }, { data: caja }] = await Promise.all([
+    supabase
+      .from('alma_appointments')
+      .select('id, hora, duracion_min, precio, estado, alma_patients(nombre)')
+      .eq('fecha', dia)
+      .order('hora', { ascending: true }),
+    supabase.from('alma_cash_entries').select('tipo, monto').eq('fecha', dia),
+  ]);
+
+  const ingresosHoy = (caja ?? [])
+    .filter((c) => c.tipo === 'ingreso')
+    .reduce((s, c) => s + Number(c.monto), 0);
+  const gastosHoy = (caja ?? [])
+    .filter((c) => c.tipo === 'gasto')
+    .reduce((s, c) => s + Number(c.monto), 0);
+  const hayCaja = (caja ?? []).length > 0;
 
   const turnos: TurnoCardData[] = (data ?? []).map((r) => ({
     id: r.id,
@@ -65,6 +77,31 @@ export default async function HoyPage() {
             Ver la agenda completa
           </Link>
         </div>
+      </section>
+
+      <section className="mt-4 rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-[.08em] text-[var(--alma-text-muted)]">
+            Caja de hoy
+          </p>
+          <Link
+            href="/caja"
+            className="text-xs font-semibold text-[var(--alma-action)] transition-opacity duration-micro ease-alma hover:opacity-80"
+          >
+            Ver caja
+          </Link>
+        </div>
+        {hayCaja ? (
+          <>
+            <p className="tnum mt-1 text-[26px] font-semibold">{pesos(ingresosHoy - gastosHoy)}</p>
+            <p className="mt-0.5 text-xs text-[var(--alma-text-muted)]">
+              <span className="tnum">{pesos(ingresosHoy)}</span> ingresos ·{' '}
+              <span className="tnum">{pesos(gastosHoy)}</span> gastos
+            </p>
+          </>
+        ) : (
+          <p className="mt-1 text-sm text-[var(--alma-text-muted)]">Todavía no registraste nada hoy.</p>
+        )}
       </section>
 
       <section className="mt-6">

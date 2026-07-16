@@ -23,17 +23,21 @@ export function DiaNav({
   nextHref,
   titulo,
   subtitulo,
+  prevLabel = 'Día anterior',
+  nextLabel = 'Día siguiente',
 }: {
   prevHref: string;
   nextHref: string;
   titulo: string;
   subtitulo?: string | null;
+  prevLabel?: string;
+  nextLabel?: string;
 }) {
   return (
     <div className="mb-4 flex items-center justify-between">
       <Link
         href={prevHref}
-        aria-label="Día anterior"
+        aria-label={prevLabel}
         className="rounded-md p-2 text-[var(--alma-text-muted)] transition-colors duration-micro ease-alma hover:text-[var(--alma-text)]"
       >
         <Chevron dir="left" />
@@ -48,7 +52,7 @@ export function DiaNav({
       </div>
       <Link
         href={nextHref}
-        aria-label="Día siguiente"
+        aria-label={nextLabel}
         className="rounded-md p-2 text-[var(--alma-text-muted)] transition-colors duration-micro ease-alma hover:text-[var(--alma-text)]"
       >
         <Chevron dir="right" />
