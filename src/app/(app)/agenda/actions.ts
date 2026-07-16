@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { getSessionContext } from '@/lib/tenant';
-import { crearPreferenciaSena } from '@/lib/mp';
+import { crearPreferenciaSena, siteUrl } from '@/lib/mp';
 import type { AgendaState, Estado, MpLinkState } from '@/lib/turno';
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
@@ -228,11 +228,14 @@ export async function generarLinkSena(
   }
 
   const supabase = await createServerSupabase();
-  const { data: turno } = await supabase
-    .from('alma_appointments')
-    .select('id, sena_monto, alma_patients(nombre)')
-    .eq('id', parsed.data.id)
-    .maybeSingle();
+  const [{ data: turno }, { data: tenant }] = await Promise.all([
+    supabase
+      .from('alma_appointments')
+      .select('id, sena_monto, alma_patients(nombre)')
+      .eq('id', parsed.data.id)
+      .maybeSingle(),
+    supabase.from('alma_tenants').select('slug').maybeSingle(),
+  ]);
   if (!turno) {
     return { error: 'No encontramos el turno.' };
   }
@@ -245,11 +248,18 @@ export async function generarLinkSena(
   const rel = turno.alma_patients;
   const nombre = (Array.isArray(rel) ? rel[0] : rel)?.nombre ?? 'Paciente';
 
+  // Si el tenant tiene portal, el paciente que paga vuelve a la página pública
+  // del turno (no a la agenda privada, que le pediría login).
+  const urlTurno = tenant?.slug
+    ? `${siteUrl()}/t/${tenant.slug}/turno/${turno.id}`
+    : null;
+
   try {
     const link = await crearPreferenciaSena({
       appointmentId: turno.id,
       titulo: `Seña — ${nombre}`,
       monto: sena,
+      backUrls: urlTurno ? { success: urlTurno, failure: urlTurno, pending: urlTurno } : undefined,
     });
     return { link };
   } catch {

@@ -17,6 +17,11 @@ export function normalizarTelAR(telefono: string): string | null {
   return `549${d}`;
 }
 
+/** Link wa.me sin destinatario: abre WhatsApp para elegir a quién compartirle el mensaje. */
+export function waShareLink(mensaje: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
+}
+
 /** Arma el link wa.me con el mensaje prellenado. null si el teléfono no sirve. */
 export function waLink(telefono: string, mensaje: string): string | null {
   const tel = normalizarTelAR(telefono);

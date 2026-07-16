@@ -12,7 +12,7 @@ function accessToken(): string {
   return t;
 }
 
-function siteUrl(): string {
+export function siteUrl(): string {
   return (
     process.env.NEXT_PUBLIC_SITE_URL ??
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
@@ -24,6 +24,8 @@ export async function crearPreferenciaSena(args: {
   appointmentId: string;
   titulo: string;
   monto: number;
+  /** Adónde vuelve el pagador. Por defecto, la agenda privada (flujo del profesional). */
+  backUrls?: { success: string; failure: string; pending: string };
 }): Promise<string> {
   const base = siteUrl();
   const res = await fetch(`${MP_API}/checkout/preferences`, {
@@ -44,7 +46,7 @@ export async function crearPreferenciaSena(args: {
       // Con esto el webhook sabe a qué turno pertenece el pago.
       external_reference: args.appointmentId,
       notification_url: `${base}/api/mp/webhook`,
-      back_urls: {
+      back_urls: args.backUrls ?? {
         success: `${base}/agenda`,
         failure: `${base}/agenda`,
         pending: `${base}/agenda`,
