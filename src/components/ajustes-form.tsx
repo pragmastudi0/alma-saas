@@ -11,6 +11,7 @@ type Defaults = {
   sena_default: number;
   duracion_default: number;
   alias_mp: string;
+  slug: string;
 };
 
 export function AjustesForm({
@@ -73,7 +74,7 @@ export function AjustesForm({
             <input
               name="duracion_default"
               type="number"
-              min={1}
+              min={5}
               step={5}
               required
               defaultValue={defaults.duracion_default}
@@ -91,6 +92,25 @@ export function AjustesForm({
           placeholder="tu.alias.mp"
           className={inputCls}
         />
+      </label>
+
+      <label className="block border-t border-[var(--alma-border)] pt-4">
+        <span className={labelCls}>Tu link de reservas</span>
+        <div className="flex items-center gap-1">
+          <span className="shrink-0 text-sm text-[var(--alma-text-muted)]">/t/</span>
+          <input
+            name="slug"
+            defaultValue={defaults.slug}
+            placeholder="tu-nombre"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={inputCls}
+          />
+        </div>
+        <span className="mt-1 block text-xs text-[var(--alma-text-muted)]">
+          Minúsculas, números y guiones. Dejalo vacío para desactivar las reservas online.
+        </span>
       </label>
 
       {state.error && (

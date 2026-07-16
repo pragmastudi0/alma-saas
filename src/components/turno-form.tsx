@@ -105,7 +105,7 @@ export function TurnoForm({
         <input
           name="duracion_min"
           type="number"
-          min={1}
+          min={5}
           step={5}
           required
           defaultValue={defaults.duracion_min}
