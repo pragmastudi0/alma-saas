@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { createAdminSupabase } from '@/lib/supabase/admin';
 
 export type AuthState = { error?: string; info?: string };
 
@@ -48,27 +49,30 @@ export async function registro(_prev: AuthState, formData: FormData): Promise<Au
     return { error: parsed.error.issues[0].message };
   }
 
-  const supabase = await createServerSupabase();
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-  const { data, error } = await supabase.auth.signUp({
+  // El proyecto Supabase es compartido: no tocamos el ajuste global de
+  // confirmación de correo. Creamos la cuenta ya confirmada con service-role
+  // y la logueamos en el acto, así el profesional entra sin pasar por el mail.
+  const admin = createAdminSupabase();
+  const { error: createErr } = await admin.auth.admin.createUser({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: {
-      data: { nombre: parsed.data.nombre },
-      emailRedirectTo: `${siteUrl}/auth/confirm`,
-    },
+    email_confirm: true,
+    user_metadata: { nombre: parsed.data.nombre },
   });
-  if (error) {
-    if (error.code === 'user_already_exists') {
+  if (createErr) {
+    if (createErr.code === 'email_exists' || createErr.status === 422) {
       return { error: 'Ese correo ya tiene una cuenta. Probá iniciar sesión.' };
     }
     return { error: 'No pudimos crear tu cuenta. Probá de nuevo en un rato.' };
   }
 
-  if (!data.session) {
-    return { info: 'Te mandamos un correo para confirmar tu cuenta. Revisá tu casilla.' };
+  const supabase = await createServerSupabase();
+  const { error: signInErr } = await supabase.auth.signInWithPassword({
+    email: parsed.data.email,
+    password: parsed.data.password,
+  });
+  if (signInErr) {
+    return { error: 'Creamos tu cuenta pero no pudimos iniciar sesión. Probá entrar.' };
   }
 
   redirect('/hoy');
