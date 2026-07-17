@@ -14,13 +14,36 @@ const instrumentSerif = Instrument_Serif({
   subsets: ['latin'],
 });
 
+// URL pública del sitio: hace que la imagen de compartir sea una URL absoluta
+// (WhatsApp, Instagram y demás no leen imágenes con ruta relativa).
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: 'alma — tu consultorio, en orden',
   description: 'La secretaria virtual del profesional independiente.',
   appleWebApp: {
     capable: true,
     title: 'alma',
     statusBarStyle: 'default',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'alma',
+    locale: 'es_AR',
+    url: '/',
+    title: 'alma — tu consultorio, en orden',
+    description:
+      'La secretaria virtual que se encarga de los turnos, las señas y los recordatorios. Vos atendé; del resto nos ocupamos.',
+    // La imagen la aporta automáticamente src/app/opengraph-image.tsx.
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'alma — tu consultorio, en orden',
+    description:
+      'La secretaria virtual que se encarga de los turnos, las señas y los recordatorios. Vos atendé; del resto nos ocupamos.',
   },
 };
 
