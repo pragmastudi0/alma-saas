@@ -50,7 +50,7 @@ export default async function AjustesPage({
   }));
 
   return (
-    <main className="pb-10">
+    <main className="pb-10 md:max-w-2xl">
       <header className="mb-5">
         <h1 className="text-[22px] font-semibold">Ajustes</h1>
       </header>

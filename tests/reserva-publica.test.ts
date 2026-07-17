@@ -46,7 +46,10 @@ function datos(extra: Partial<DatosReserva>): DatosReserva {
     fecha: FECHA,
     hora: '09:00',
     nombre: 'Paciente Portal',
+    apellido: 'Del Portal',
     telefono: '11 5555 4444',
+    email: 'paciente.portal@alma-test.local',
+    fechaNacimiento: '1990-05-12',
     ...extra,
   };
 }
@@ -105,6 +108,19 @@ describe('reserva pública', () => {
     expect(Number(t?.sena_monto)).toBe(5000);
     expect(t?.duracion_min).toBe(60);
     expect(Number(t?.precio)).toBe(15000);
+  });
+
+  it('arma el perfil del paciente con todos los datos del turnero', async () => {
+    const { data: p } = await admin
+      .from('alma_patients')
+      .select('nombre, apellido, email, fecha_nacimiento')
+      .eq('tenant_id', tenantId)
+      .eq('telefono', '5491155554444')
+      .single();
+    expect(p?.nombre).toBe('Paciente Portal');
+    expect(p?.apellido).toBe('Del Portal');
+    expect(p?.email).toBe('paciente.portal@alma-test.local');
+    expect(p?.fecha_nacimiento).toBe('1990-05-12');
   });
 
   it('el mismo slot ya no se puede reservar', async () => {

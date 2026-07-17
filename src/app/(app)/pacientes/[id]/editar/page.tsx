@@ -14,7 +14,7 @@ export default async function EditarPacientePage({
   const supabase = await createServerSupabase();
   const { data: p } = await supabase
     .from('alma_patients')
-    .select('id, nombre, telefono, email, notas')
+    .select('id, nombre, apellido, telefono, email, fecha_nacimiento, notas')
     .eq('id', id)
     .maybeSingle();
 
@@ -33,8 +33,10 @@ export default async function EditarPacientePage({
         pacienteId={p.id}
         defaults={{
           nombre: p.nombre,
+          apellido: p.apellido ?? '',
           telefono: p.telefono ?? '',
           email: p.email ?? '',
+          fecha_nacimiento: p.fecha_nacimiento ?? '',
           notas: p.notas ?? '',
         }}
       />

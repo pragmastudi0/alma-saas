@@ -1,7 +1,7 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 import { PacienteCard, type PacienteCardData } from '@/components/paciente-card';
 import { EmptyState } from '@/components/empty-state';
-import { Fab } from '@/components/fab';
+import { Fab, AccionNueva } from '@/components/fab';
 import { inputCls } from '@/components/ui/field';
 
 export default async function PacientesPage({
@@ -13,27 +13,32 @@ export default async function PacientesPage({
   const term = (q ?? '').trim();
 
   const supabase = await createServerSupabase();
-  let query = supabase.from('alma_patients').select('id, nombre, telefono').order('nombre');
+  let query = supabase
+    .from('alma_patients')
+    .select('id, nombre, apellido, telefono')
+    .eq('archivado', false)
+    .order('nombre');
   if (term) {
     // Sacamos caracteres reservados de PostgREST/ilike antes de armar el patrón.
     const safe = term.replace(/[%,()]/g, ' ');
-    query = query.ilike('nombre', `%${safe}%`);
+    query = query.or(`nombre.ilike.%${safe}%,apellido.ilike.%${safe}%`);
   }
   const { data } = await query;
 
   const pacientes: PacienteCardData[] = (data ?? []).map((p) => ({
     id: p.id,
-    nombre: p.nombre,
+    nombre: [p.nombre, p.apellido].filter(Boolean).join(' ').trim(),
     telefono: p.telefono ?? '',
   }));
 
   return (
-    <main className="pb-24">
-      <header className="mb-4">
+    <main className="pb-24 md:pb-8">
+      <header className="mb-4 flex items-center justify-between gap-3">
         <h1 className="text-[22px] font-semibold">Pacientes</h1>
+        <AccionNueva href="/pacientes/nuevo" label="Nuevo paciente" />
       </header>
 
-      <form className="mb-4">
+      <form className="mb-4 md:max-w-md">
         <input
           name="q"
           defaultValue={term}
@@ -54,7 +59,7 @@ export default async function PacientesPage({
           />
         )
       ) : (
-        <ul className="flex flex-col gap-2.5">
+        <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {pacientes.map((p) => (
             <li key={p.id}>
               <PacienteCard p={p} />

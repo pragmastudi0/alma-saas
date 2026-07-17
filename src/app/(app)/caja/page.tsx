@@ -3,7 +3,7 @@ import { CajaResumen } from '@/components/caja-resumen';
 import { MovimientoCard, type MovimientoData } from '@/components/movimiento-card';
 import { DiaNav } from '@/components/dia-nav';
 import { EmptyState } from '@/components/empty-state';
-import { Fab } from '@/components/fab';
+import { Fab, AccionNueva } from '@/components/fab';
 import { addMeses, etiquetaMes, mesActual, rangoMes } from '@/lib/fecha';
 
 const MES = /^\d{4}-\d{2}$/;
@@ -39,7 +39,10 @@ export default async function CajaPage({
   const gastos = movimientos.filter((x) => x.tipo === 'gasto').reduce((s, x) => s + x.monto, 0);
 
   return (
-    <main className="pb-24">
+    <main className="pb-24 md:pb-8">
+      <div className="mb-4 hidden justify-end md:flex">
+        <AccionNueva href="/caja/nuevo" label="Nuevo movimiento" />
+      </div>
       <DiaNav
         prevHref={`/caja?m=${addMeses(ym, -1)}`}
         nextHref={`/caja?m=${addMeses(ym, 1)}`}
@@ -58,7 +61,7 @@ export default async function CajaPage({
             ctaLabel="Anotar un movimiento"
           />
         ) : (
-          <ul className="flex flex-col gap-2.5">
+          <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
             {movimientos.map((mv) => (
               <li key={mv.id}>
                 <MovimientoCard m={mv} />

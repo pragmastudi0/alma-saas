@@ -32,7 +32,7 @@ export function TurnoForm({
   const [nuevo, setNuevo] = useState(pacientes?.length === 0);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="flex flex-col gap-4 md:max-w-xl">
       {turnoId && <input type="hidden" name="id" value={turnoId} />}
 
       {pacientes && (

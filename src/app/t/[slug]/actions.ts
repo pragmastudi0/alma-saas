@@ -18,7 +18,10 @@ const reservaSchema = z.object({
   fecha: z.string().regex(FECHA, 'Elegí una fecha válida.'),
   hora: z.string().regex(HORA, 'Elegí un horario.'),
   nombre: z.string().trim().min(2, 'Contanos tu nombre.').max(80),
+  apellido: z.string().trim().min(2, 'Dejanos tu apellido.').max(80),
   telefono: z.string().trim().min(6, 'Dejanos un teléfono para avisarte.').max(40),
+  email: z.string().trim().email('Necesitamos un email válido.').max(120),
+  fecha_nacimiento: z.string().regex(FECHA, 'Poné tu fecha de nacimiento.'),
 });
 
 const MENSAJES: Record<string, string> = {
@@ -93,7 +96,10 @@ export async function reservarTurno(
     fecha: v.fecha,
     hora: v.hora,
     nombre: v.nombre,
+    apellido: v.apellido,
     telefono: v.telefono,
+    email: v.email,
+    fechaNacimiento: v.fecha_nacimiento,
   });
 
   if (!resultado.ok) {

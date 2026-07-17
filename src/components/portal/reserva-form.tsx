@@ -6,6 +6,10 @@ import { inputCls, labelCls } from '@/components/ui/field';
 import { pesos } from '@/lib/format';
 import type { ReservaState } from '@/lib/portal';
 
+const cardCls =
+  'rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] p-4 shadow-1';
+const seccionCls = 'mb-3 text-sm font-semibold text-[var(--alma-text)]';
+
 /** Elegir horario + datos del paciente. El horario elegido viaja como hidden. */
 export function ReservaForm({
   slug,
@@ -38,9 +42,9 @@ export function ReservaForm({
         className="hidden"
       />
 
-      <div>
-        <p className={labelCls}>Elegí un horario</p>
-        <div className="mt-1 grid grid-cols-3 gap-2">
+      <section className={cardCls}>
+        <p className={seccionCls}>Elegí un horario</p>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {slots.map((s) => (
             <button
               key={s}
@@ -50,32 +54,77 @@ export function ReservaForm({
               className={`tnum min-h-[44px] rounded-md border text-sm font-semibold transition-colors duration-micro ease-alma ${
                 hora === s
                   ? 'border-[var(--alma-action)] bg-[var(--alma-action)] text-[var(--alma-on-action)]'
-                  : 'border-[var(--alma-border)] bg-[var(--alma-surface)] hover:border-[var(--alma-text-muted)]'
+                  : 'border-[var(--alma-border)] bg-[var(--alma-bg)] hover:border-[var(--alma-text-muted)]'
               }`}
             >
               {s}
             </button>
           ))}
         </div>
-      </div>
+      </section>
 
-      <label className="block">
-        <span className={labelCls}>Tu nombre</span>
-        <input name="nombre" required minLength={2} maxLength={80} className={inputCls} />
-      </label>
+      <section className={cardCls}>
+        <p className={seccionCls}>Tus datos</p>
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className={labelCls}>Nombre</span>
+              <input
+                name="nombre"
+                required
+                minLength={2}
+                maxLength={80}
+                autoComplete="given-name"
+                className={inputCls}
+              />
+            </label>
+            <label className="block">
+              <span className={labelCls}>Apellido</span>
+              <input
+                name="apellido"
+                required
+                minLength={2}
+                maxLength={80}
+                autoComplete="family-name"
+                className={inputCls}
+              />
+            </label>
+          </div>
 
-      <label className="block">
-        <span className={labelCls}>Tu teléfono</span>
-        <input
-          name="telefono"
-          type="tel"
-          required
-          minLength={6}
-          maxLength={40}
-          placeholder="11 5555 4444"
-          className={inputCls + ' tnum'}
-        />
-      </label>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className={labelCls}>Teléfono</span>
+              <input
+                name="telefono"
+                type="tel"
+                required
+                minLength={6}
+                maxLength={40}
+                autoComplete="tel"
+                placeholder="11 5555 4444"
+                className={inputCls + ' tnum'}
+              />
+            </label>
+            <label className="block">
+              <span className={labelCls}>Email</span>
+              <input
+                name="email"
+                type="email"
+                required
+                maxLength={120}
+                autoComplete="email"
+                placeholder="vos@email.com"
+                className={inputCls}
+              />
+            </label>
+          </div>
+
+          <label className="block sm:max-w-[16rem]">
+            <span className={labelCls}>Fecha de nacimiento</span>
+            <input name="fecha_nacimiento" type="date" required className={inputCls} />
+          </label>
+        </div>
+      </section>
 
       {state.error && (
         <p role="alert" className="text-sm text-[var(--error-600)]">

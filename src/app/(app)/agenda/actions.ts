@@ -3,11 +3,13 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { getSessionContext } from '@/lib/tenant';
 import { crearPreferenciaSena, siteUrl } from '@/lib/mp';
 import { obtenerCredencialMp } from '@/lib/mp-oauth';
+import { registrarIngresoTurno, nombrePaciente } from '@/lib/caja';
 import type { AgendaState, Estado, MpLinkState } from '@/lib/turno';
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
@@ -156,14 +158,25 @@ export async function editarTurno(_prev: AgendaState, formData: FormData): Promi
   redirect(`/agenda/${v.id}`);
 }
 
+/** Fila del turno tras una transición, con el paciente para asentar la caja. */
+type TurnoTransicion = {
+  id: string;
+  precio: number | string;
+  sena_monto: number | string;
+  alma_patients: { nombre?: string | null; apellido?: string | null } | { nombre?: string | null; apellido?: string | null }[] | null;
+};
+
 /**
  * Transición de estado atómica: sólo aplica si el turno está en uno de los
  * estados válidos de origen (enforcá la máquina de estados y evita carreras).
+ * `alAplicar` corre sólo cuando la transición realmente ocurrió (útil para
+ * asentar la caja una única vez); si falla, el cambio de estado ya quedó firme.
  */
 async function transicionar(
   formData: FormData,
   desde: Estado[],
   cambios: Record<string, unknown>,
+  alAplicar?: (turno: TurnoTransicion, supabase: SupabaseClient, tenantId: string) => Promise<void>,
 ): Promise<AgendaState> {
   const ctx = await getSessionContext();
   if (!ctx) redirect('/login');
@@ -179,7 +192,7 @@ async function transicionar(
     .update(cambios)
     .eq('id', parsed.data.id)
     .in('estado', desde)
-    .select('id');
+    .select('id, precio, sena_monto, alma_patients(nombre, apellido)');
   if (error?.code === '23P01') {
     return { error: 'Ese cambio choca con otro turno.' };
   }
@@ -190,20 +203,61 @@ async function transicionar(
     return { error: 'Ese cambio ya no aplica al estado del turno.' };
   }
 
+  if (alAplicar) {
+    try {
+      await alAplicar(data[0] as TurnoTransicion, supabase, ctx.tenantId);
+    } catch {
+      // La transición ya quedó firme: no rompemos la acción por la caja.
+    }
+  }
+
   revalidatePath('/agenda');
   revalidatePath('/hoy');
+  revalidatePath('/caja');
   revalidatePath('/agenda/[id]', 'page');
   return { info: 'Listo.' };
 }
 
-/** pendiente_sena → confirmado (marcar seña cobrada; MP automatiza esto en F3). */
+/**
+ * pendiente_sena → confirmado (seña cobrada a mano: alias/efectivo). Asienta la
+ * seña en caja, igual que hace el webhook de MP cuando el pago es online.
+ */
 export async function confirmarSena(_prev: AgendaState, formData: FormData): Promise<AgendaState> {
-  return transicionar(formData, ['pendiente_sena'], { estado: 'confirmado', sena_pagada: true });
+  return transicionar(
+    formData,
+    ['pendiente_sena'],
+    { estado: 'confirmado', sena_pagada: true },
+    async (turno, supabase, tenantId) => {
+      const nombre = nombrePaciente(turno.alma_patients);
+      await registrarIngresoTurno(supabase, {
+        tenantId,
+        appointmentId: turno.id,
+        categoria: 'Seña',
+        monto: Number(turno.sena_monto),
+        descripcion: nombre ? `Seña — ${nombre}` : 'Seña',
+      });
+    },
+  );
 }
 
-/** confirmado → completado. */
+/** confirmado → completado. Asienta en caja el saldo del turno (precio − seña). */
 export async function completarTurno(_prev: AgendaState, formData: FormData): Promise<AgendaState> {
-  return transicionar(formData, ['confirmado'], { estado: 'completado' });
+  return transicionar(
+    formData,
+    ['confirmado'],
+    { estado: 'completado' },
+    async (turno, supabase, tenantId) => {
+      const saldo = Number(turno.precio) - Number(turno.sena_monto);
+      const nombre = nombrePaciente(turno.alma_patients);
+      await registrarIngresoTurno(supabase, {
+        tenantId,
+        appointmentId: turno.id,
+        categoria: 'Turno',
+        monto: saldo,
+        descripcion: nombre ? `Turno — ${nombre}` : 'Turno',
+      });
+    },
+  );
 }
 
 /** pendiente_sena | confirmado → cancelado. */

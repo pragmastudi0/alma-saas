@@ -50,10 +50,12 @@ export default async function PortalPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="voice text-[26px] leading-[1.15]">Reservá tu turno</h1>
+      <div className="rounded-xl border border-[var(--alma-border)] bg-[var(--alma-surface)] p-5 shadow-1">
+        <h1 className="voice text-[28px] leading-[1.1] text-[var(--alma-voice)]">
+          Reservá tu turno
+        </h1>
         {precio > 0 && (
-          <p className="mt-1 text-sm text-[var(--alma-text-muted)]">
+          <p className="mt-2 text-sm text-[var(--alma-text-muted)]">
             La sesión cuesta <span className="tnum font-medium">{pesos(precio)}</span>
             {sena > 0 && (
               <>
@@ -68,7 +70,7 @@ export default async function PortalPage({
 
       <DiaPicker dias={dias} activo={dia} diasQueAtiende={diasQueAtiende} />
 
-      <p className="text-sm font-medium capitalize">
+      <p className="text-sm font-medium capitalize text-[var(--alma-text)]">
         {etiquetaRelativa(dia, tenant.timezone) ?? etiquetaDia(dia)}
       </p>
 

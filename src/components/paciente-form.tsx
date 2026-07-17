@@ -6,8 +6,10 @@ import type { PacienteState } from '@/lib/paciente';
 
 type Defaults = {
   nombre?: string;
+  apellido?: string;
   telefono?: string;
   email?: string;
+  fecha_nacimiento?: string;
   notas?: string;
 };
 
@@ -25,23 +27,35 @@ export function PacienteForm({
   const [state, formAction, pending] = useActionState(action, {});
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="flex flex-col gap-4 md:max-w-xl">
       {pacienteId && <input type="hidden" name="id" value={pacienteId} />}
 
-      <label className="block">
-        <span className={labelCls}>Nombre</span>
-        <input
-          name="nombre"
-          required
-          autoComplete="name"
-          defaultValue={defaults.nombre}
-          placeholder="Nombre y apellido"
-          className={inputCls}
-        />
-      </label>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className={labelCls}>Nombre</span>
+          <input
+            name="nombre"
+            required
+            autoComplete="given-name"
+            defaultValue={defaults.nombre}
+            placeholder="Valentina"
+            className={inputCls}
+          />
+        </label>
+        <label className="block">
+          <span className={labelCls}>Apellido</span>
+          <input
+            name="apellido"
+            autoComplete="family-name"
+            defaultValue={defaults.apellido}
+            placeholder="Ríos"
+            className={inputCls}
+          />
+        </label>
+      </div>
 
-      <div className="flex gap-3">
-        <label className="block flex-1">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <label className="block">
           <span className={labelCls}>Teléfono</span>
           <input
             name="telefono"
@@ -51,7 +65,7 @@ export function PacienteForm({
             className={inputCls}
           />
         </label>
-        <label className="block flex-1">
+        <label className="block">
           <span className={labelCls}>Correo</span>
           <input
             name="email"
@@ -62,6 +76,16 @@ export function PacienteForm({
           />
         </label>
       </div>
+
+      <label className="block sm:max-w-[16rem]">
+        <span className={labelCls}>Fecha de nacimiento</span>
+        <input
+          name="fecha_nacimiento"
+          type="date"
+          defaultValue={defaults.fecha_nacimiento}
+          className={inputCls}
+        />
+      </label>
 
       <label className="block">
         <span className={labelCls}>Notas</span>

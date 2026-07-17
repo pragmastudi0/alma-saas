@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { Landing } from '@/components/landing';
 
 export default async function Home() {
   const supabase = await createServerSupabase();
@@ -7,5 +8,8 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  redirect(user ? '/hoy' : '/login');
+  // Con sesión: directo a la app. Sin sesión: la landing de marketing.
+  if (user) redirect('/hoy');
+
+  return <Landing />;
 }
