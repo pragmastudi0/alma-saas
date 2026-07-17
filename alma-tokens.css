@@ -1,0 +1,183 @@
+/* ============================================================
+   alma · Design Tokens · v1.0 · 2026
+   Sistema de Identidad Visual — implementación de referencia
+   Regla: el producto consume tokens SEMÁNTICOS (--alma-*),
+   los primitivos existen solo para alimentarlos.
+   ============================================================ */
+
+:root {
+  /* ---------- Primitivos · Verde ---------- */
+  --verde-50:  #EFF6F3;
+  --verde-100: #DCEDE6;
+  --verde-200: #B9DBCE;
+  --verde-300: #8FC4B0;
+  --verde-400: #57A28A;
+  --verde-500: #2C806A;
+  --verde-600: #0E5F4C;   /* base de marca */
+  --verde-700: #0A4A3B;   /* bosque */
+  --verde-800: #073226;
+  --verde-900: #04201A;
+
+  /* ---------- Primitivos · Neutral (piedra, gris cálido) ---------- */
+  --neutral-0:   #FFFFFF; /* papel */
+  --neutral-50:  #F7F7F3; /* niebla */
+  --neutral-100: #F0F0EB;
+  --neutral-200: #E8E8E2; /* borde */
+  --neutral-300: #D6D6CE;
+  --neutral-400: #B3B4AB;
+  --neutral-500: #8B8C85; /* piedra */
+  --neutral-600: #6E6F68;
+  --neutral-700: #52534D;
+  --neutral-800: #33342F;
+  --neutral-900: #191A17; /* tinta */
+
+  /* ---------- Primitivos · Semánticos ---------- */
+  --warning-600: #A8641C;  --warning-soft: #FBF1E2;
+  --error-600:   #B3261E;  --error-soft:   #FCEEED;
+  --info-600:    #446A85;  --info-soft:    #E9F0F5;
+  /* success comparte base con la marca: la confirmación ES la marca */
+  --success-600: var(--verde-600);
+  --success-soft: #E9F2EE;
+
+  /* ---------- Semánticos · Light (default) ---------- */
+  --alma-bg:            var(--neutral-0);
+  --alma-surface:       var(--neutral-50);
+  --alma-surface-2:     var(--neutral-100);
+  --alma-border:        var(--neutral-200);
+  --alma-text:          var(--neutral-900);
+  --alma-text-muted:    var(--neutral-500);
+  --alma-action:        var(--verde-600);
+  --alma-action-hover:  var(--verde-700);
+  --alma-action-soft:   var(--verde-50);
+  --alma-on-action:     #FFFFFF;
+  --alma-voice:         var(--verde-600); /* color de la serif itálica */
+
+  /* ---------- Tipografía ---------- */
+  --alma-font-voice: 'Instrument Serif', Georgia, serif;
+  --alma-font-ui:    'Inter', system-ui, sans-serif;
+  --alma-font-mono:  'JetBrains Mono', ui-monospace, monospace;
+
+  /* Escala (px) · desktop / mobile en comentario */
+  --alma-text-display: 40px;  /* mobile 32 · serif 400 */
+  --alma-text-title:   28px;  /* mobile 23 · serif 400 */
+  --alma-text-section: 18px;  /* mobile 17 · Inter 600 */
+  --alma-text-body:    15px;
+  --alma-text-sec:     13px;
+  --alma-text-label:   12px;  /* caps · tracking +8% */
+  --alma-text-kpi:     24px;  /* mobile 19 · tabular */
+
+  /* ---------- Forma ---------- */
+  --alma-radius-sm:  8px;
+  --alma-radius-md: 12px;   /* botón, input */
+  --alma-radius-lg: 16px;   /* tarjeta */
+  --alma-radius-xl: 20px;   /* hero, sheet */
+  --alma-radius-full: 999px;
+
+  /* ---------- Elevación ---------- */
+  --alma-shadow-1: 0 1px 2px rgb(25 26 23 / .05), 0 4px 16px rgb(25 26 23 / .04);
+  --alma-shadow-2: 0 8px 24px rgb(25 26 23 / .10);
+  --alma-shadow-3: 0 16px 48px rgb(25 26 23 / .16);
+  --alma-shadow-brand: 0 8px 24px rgb(14 95 76 / .25);
+
+  /* ---------- Motion ---------- */
+  --alma-ease-out:    cubic-bezier(.2, 0, 0, 1);
+  --alma-ease-inout:  cubic-bezier(.4, 0, .2, 1);
+  --alma-ease-in:     cubic-bezier(.4, 0, 1, 1);
+  --alma-t-micro: 150ms;
+  --alma-t-std:   220ms;
+  --alma-t-struct:280ms;
+  --alma-t-sign:  350ms;   /* firma: flor dibujándose */
+
+  /* ---------- Capas y opacidades ---------- */
+  --alma-z-fab:     30;
+  --alma-z-nav:     40;
+  --alma-z-overlay: 50;
+  --alma-z-toast:   60;
+  --alma-op-disabled:  .4;
+  --alma-op-overlay:   .42;
+  --alma-op-watermark: .09;
+  --alma-op-glass:     .93;
+
+  /* ---------- Espaciado (escala 8pt, micro 4) ---------- */
+  --alma-sp-1: 4px;  --alma-sp-2: 8px;  --alma-sp-3: 12px;
+  --alma-sp-4: 16px; --alma-sp-5: 20px; --alma-sp-6: 24px;
+  --alma-sp-8: 32px; --alma-sp-10: 40px; --alma-sp-12: 48px;
+  --alma-sp-16: 64px; --alma-sp-20: 80px; --alma-sp-24: 96px;
+}
+
+/* ============================================================
+   Dark mode · tokens dedicados (nunca invertir con filtros)
+   Activación: [data-theme="dark"] o prefers-color-scheme
+   ============================================================ */
+[data-theme="dark"] {
+  --alma-bg:           #121311;
+  --alma-surface:      #1B1C19;
+  --alma-surface-2:    #232420;
+  --alma-border:       #2C2D29;
+  --alma-text:         #F2F2ED;   /* nunca blanco puro */
+  --alma-text-muted:   #9C9D96;
+  --alma-action:       #3FA284;   /* verde-dark · AA sobre fondo */
+  --alma-action-hover: #57A28A;
+  --alma-action-soft:  #173F34;
+  --alma-on-action:    #06231B;
+  --alma-voice:        #57A28A;
+  --warning-600: #D69A55;  --warning-soft: #33270F;
+  --error-600:   #E58B84;  --error-soft:   #33110F;
+  --info-600:    #7FA6C4;  --info-soft:    #14202B;
+  --alma-shadow-1: none;   /* elevación por superficie, no por sombra */
+  --alma-shadow-2: 0 8px 24px rgb(0 0 0 / .4);
+  --alma-shadow-3: 0 16px 48px rgb(0 0 0 / .5);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* replicar bloque dark si se usa detección automática */
+  }
+}
+
+/* ============================================================
+   Accesibilidad · innegociable
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --alma-t-micro: 0ms; --alma-t-std: 0ms;
+    --alma-t-struct: 0ms; --alma-t-sign: 0ms;
+  }
+}
+
+/* ============================================================
+   Tailwind · preset equivalente
+   Guardar como alma.preset.js y extender en tailwind.config:
+   presets: [require('./alma.preset')]
+   ------------------------------------------------------------
+   module.exports = { theme: { extend: {
+     colors: {
+       verde:  {50:'#EFF6F3',100:'#DCEDE6',200:'#B9DBCE',300:'#8FC4B0',
+                400:'#57A28A',500:'#2C806A',600:'#0E5F4C',700:'#0A4A3B',
+                800:'#073226',900:'#04201A'},
+       neutral:{0:'#FFFFFF',50:'#F7F7F3',100:'#F0F0EB',200:'#E8E8E2',
+                300:'#D6D6CE',400:'#B3B4AB',500:'#8B8C85',600:'#6E6F68',
+                700:'#52534D',800:'#33342F',900:'#191A17'},
+       warning:'#A8641C', error:'#B3261E', info:'#446A85'
+     },
+     fontFamily: {
+       voice:['"Instrument Serif"','serif'],
+       sans: ['Inter','system-ui','sans-serif'],
+       mono: ['"JetBrains Mono"','monospace']
+     },
+     borderRadius:{ sm:'8px', md:'12px', lg:'16px', xl:'20px' },
+     boxShadow:{
+       1:'0 1px 2px rgb(25 26 23/.05),0 4px 16px rgb(25 26 23/.04)',
+       2:'0 8px 24px rgb(25 26 23/.10)',
+       brand:'0 8px 24px rgb(14 95 76/.25)'
+     },
+     transitionTimingFunction:{ alma:'cubic-bezier(.2,0,0,1)' },
+     transitionDuration:{ micro:'150ms', std:'220ms', sign:'350ms' },
+     screens:{ sm:'640px', md:'768px', lg:'1024px', xl:'1280px' }
+   }}}
+   ============================================================ */
+
+/* Naming en Figma:
+   alma/color/verde/600 · alma/color/semantic/action
+   alma/type/voice/display · alma/type/ui/body
+   Componentes: Button/Primary/Hover · Badge/Warning/Default   */
