@@ -4,6 +4,7 @@
  * datos ya normalizados del pago.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { registrarIngresoTurno, nombrePaciente } from '@/lib/caja';
 
 export type PagoNormalizado = {
   mpId: string;
@@ -38,7 +39,7 @@ export async function registrarPagoSena(
 ): Promise<ResultadoPago> {
   const { data: appt } = await admin
     .from('alma_appointments')
-    .select('id, tenant_id, estado, alma_patients(nombre)')
+    .select('id, tenant_id, estado, alma_patients(nombre, apellido)')
     .eq('id', pago.appointmentId)
     .maybeSingle();
   if (!appt) {
@@ -78,15 +79,13 @@ export async function registrarPagoSena(
 
   // La seña acreditada entra sola a la caja (una vez: sólo en la transición).
   if (confirmado) {
-    const rel = appt.alma_patients;
-    const nombre = (Array.isArray(rel) ? rel[0] : rel)?.nombre ?? '';
-    await admin.from('alma_cash_entries').insert({
-      tenant_id: appt.tenant_id,
-      tipo: 'ingreso',
+    const nombre = nombrePaciente(appt.alma_patients);
+    await registrarIngresoTurno(admin, {
+      tenantId: appt.tenant_id,
+      appointmentId: appt.id,
       categoria: 'Seña',
-      descripcion: nombre ? `Seña — ${nombre}` : 'Seña',
       monto: pago.monto,
-      appointment_id: appt.id,
+      descripcion: nombre ? `Seña — ${nombre}` : 'Seña',
     });
   }
 

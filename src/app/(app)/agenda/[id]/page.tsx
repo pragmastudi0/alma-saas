@@ -5,6 +5,7 @@ import { EstadoBadge } from '@/components/estado-badge';
 import { EstadoAcciones } from '@/components/estado-acciones';
 import type { CobroSena } from '@/components/sena-link-boton';
 import { BackLink } from '@/components/back-link';
+import { nombrePaciente } from '@/lib/caja';
 import { horaCorta, pesos } from '@/lib/format';
 import { etiquetaDia } from '@/lib/fecha';
 import type { Estado } from '@/lib/turno';
@@ -26,7 +27,7 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
     supabase
       .from('alma_appointments')
       .select(
-        'id, fecha, hora, duracion_min, precio, sena_monto, sena_pagada, estado, mp_init_point, alma_patients(nombre, telefono)',
+        'id, fecha, hora, duracion_min, precio, sena_monto, sena_pagada, estado, mp_init_point, alma_patients(nombre, apellido, telefono)',
       )
       .eq('id', id)
       .maybeSingle(),
@@ -38,6 +39,7 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
 
   const rel = data.alma_patients;
   const pac = (Array.isArray(rel) ? rel[0] : rel) as { nombre?: string; telefono?: string } | null;
+  const nombreCompleto = nombrePaciente(rel) || 'Paciente';
   const estado = data.estado as Estado;
   const sena = Number(data.sena_monto);
 
@@ -50,7 +52,7 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
       : { modo: 'ninguno' };
 
   return (
-    <main className="pb-10">
+    <main className="pb-10 md:max-w-2xl">
       <header className="mb-5 flex items-center gap-2">
         <BackLink href={`/agenda?d=${data.fecha}`} />
         <p className="text-xs font-semibold uppercase capitalize tracking-[.08em] text-[var(--alma-text-muted)]">
@@ -61,7 +63,7 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
       <section className="rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="truncate text-xl font-semibold">{pac?.nombre ?? 'Paciente'}</p>
+            <p className="truncate text-xl font-semibold">{nombreCompleto}</p>
             {pac?.telefono ? (
               <p className="tnum mt-0.5 text-sm text-[var(--alma-text-muted)]">{pac.telefono}</p>
             ) : null}
@@ -101,7 +103,7 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
           cobro={cobro}
           wa={{
             telefono: pac?.telefono ?? '',
-            nombre: pac?.nombre ?? 'Paciente',
+            nombre: nombreCompleto,
             fecha: etiquetaDia(data.fecha),
             hora: horaCorta(data.hora),
           }}
@@ -109,14 +111,16 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
       </div>
 
       {estado === 'completado' && Number(data.precio) > 0 ? (
-        <div className="mt-4">
+        <p className="mt-4 text-sm text-[var(--alma-text-muted)]">
+          El cobro ya quedó registrado en{' '}
           <Link
-            href={`/caja/nuevo?tipo=ingreso&monto=${Number(data.precio)}&cat=Turno&desc=${encodeURIComponent(`Turno ${pac?.nombre ?? ''}`.trim())}`}
-            className="text-sm font-semibold text-[var(--alma-action)] transition-opacity duration-micro ease-alma hover:opacity-80"
+            href="/caja"
+            className="font-semibold text-[var(--alma-action)] transition-opacity duration-micro ease-alma hover:opacity-80"
           >
-            Registrar en caja
+            la caja
           </Link>
-        </div>
+          .
+        </p>
       ) : null}
 
       <div className="mt-5">

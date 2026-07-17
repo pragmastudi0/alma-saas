@@ -18,7 +18,7 @@ export default async function PortalLayout({
   if (!tenant) notFound();
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col px-5 py-8">
+    <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col px-5 py-8 md:max-w-2xl md:py-12">
       <header className="mb-6">
         <p className="text-[22px] font-semibold leading-tight">{tenant.nombre}</p>
         {tenant.profesion && (

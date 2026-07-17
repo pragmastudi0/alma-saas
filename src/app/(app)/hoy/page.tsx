@@ -4,14 +4,10 @@ import { getSessionContext } from '@/lib/tenant';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { TurnoCard, type TurnoCardData } from '@/components/turno-card';
 import { EmptyState } from '@/components/empty-state';
-import { Fab } from '@/components/fab';
+import { Fab, AccionNueva } from '@/components/fab';
+import { nombrePaciente } from '@/lib/caja';
 import { etiquetaDia, hoyISO } from '@/lib/fecha';
 import { pesos } from '@/lib/format';
-
-function nombrePaciente(rel: unknown): string {
-  const p = Array.isArray(rel) ? rel[0] : rel;
-  return (p as { nombre?: string } | null)?.nombre ?? 'Paciente';
-}
 
 export default async function HoyPage() {
   const ctx = await getSessionContext();
@@ -22,7 +18,7 @@ export default async function HoyPage() {
   const [{ data }, { data: caja }] = await Promise.all([
     supabase
       .from('alma_appointments')
-      .select('id, hora, duracion_min, precio, estado, alma_patients(nombre)')
+      .select('id, hora, duracion_min, precio, estado, alma_patients(nombre, apellido)')
       .eq('fecha', dia)
       .order('hora', { ascending: true }),
     supabase.from('alma_cash_entries').select('tipo, monto').eq('fecha', dia),
@@ -42,7 +38,7 @@ export default async function HoyPage() {
     duracion_min: r.duracion_min,
     precio: Number(r.precio),
     estado: r.estado,
-    paciente: nombrePaciente(r.alma_patients),
+    paciente: nombrePaciente(r.alma_patients) || 'Paciente',
   }));
 
   // Para la cifra del hero contamos los que siguen en pie.
@@ -50,22 +46,26 @@ export default async function HoyPage() {
   const n = enPie.length;
 
   return (
-    <main className="pb-24">
-      <header className="mb-5">
-        <h1 className="voice text-[32px] leading-[1.12]">
-          {ctx.nombre ? (
-            <>
-              Hola, <em className="text-[var(--alma-voice)]">{ctx.nombre}</em>
-            </>
-          ) : (
-            'Hola'
-          )}
-        </h1>
-        <p className="mt-1.5 text-xs font-medium uppercase capitalize tracking-[.08em] text-[var(--alma-text-muted)]">
-          {etiquetaDia(dia)}
-        </p>
+    <main className="pb-24 md:pb-8">
+      <header className="mb-5 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="voice text-[32px] leading-[1.12]">
+            {ctx.nombre ? (
+              <>
+                Hola, <em className="text-[var(--alma-voice)]">{ctx.nombre}</em>
+              </>
+            ) : (
+              'Hola'
+            )}
+          </h1>
+          <p className="mt-1.5 text-xs font-medium uppercase capitalize tracking-[.08em] text-[var(--alma-text-muted)]">
+            {etiquetaDia(dia)}
+          </p>
+        </div>
+        <AccionNueva href={`/agenda/nuevo?d=${dia}`} label="Nuevo turno" />
       </header>
 
+      <div className="grid gap-4 lg:grid-cols-2">
       <section className="rounded-xl bg-gradient-to-br from-verde-600 to-verde-700 p-6 text-white shadow-brand">
         <p className="text-xs font-semibold uppercase tracking-[.1em] opacity-75">Hoy tenés</p>
         <p className="voice mt-1 text-[52px] leading-[1.05] tnum">
@@ -81,7 +81,7 @@ export default async function HoyPage() {
         </div>
       </section>
 
-      <section className="mt-4 rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] p-4">
+      <section className="rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] p-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold uppercase tracking-[.08em] text-[var(--alma-text-muted)]">
             Caja de hoy
@@ -105,6 +105,7 @@ export default async function HoyPage() {
           <p className="mt-1 text-sm text-[var(--alma-text-muted)]">Todavía no registraste nada hoy.</p>
         )}
       </section>
+      </div>
 
       <section className="mt-6">
         {turnos.length === 0 ? (
@@ -114,7 +115,7 @@ export default async function HoyPage() {
             ctaLabel="Agendar un turno"
           />
         ) : (
-          <ul className="flex flex-col gap-2.5">
+          <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {turnos.map((t) => (
               <li key={t.id}>
                 <TurnoCard t={t} />

@@ -2,23 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  IconoAjustes,
-  IconoCaja,
-  IconoCalendario,
-  IconoPacientes,
-  IconoSol,
-} from '@/components/icons';
+import { NAV_ITEMS } from '@/components/nav-items';
 
-const LINKS = [
-  { href: '/hoy', label: 'Hoy', Icono: IconoSol },
-  { href: '/agenda', label: 'Agenda', Icono: IconoCalendario },
-  { href: '/pacientes', label: 'Pacientes', Icono: IconoPacientes },
-  { href: '/caja', label: 'Caja', Icono: IconoCaja },
-  { href: '/ajustes', label: 'Ajustes', Icono: IconoAjustes },
-];
-
-/** Barra de secciones fija abajo, solo en mobile. En md+ queda la nav de arriba. */
+/** Barra de secciones fija abajo, solo en mobile. En md+ va el sidebar. */
 export function BottomNav() {
   const pathname = usePathname();
 
@@ -27,8 +13,8 @@ export function BottomNav() {
       aria-label="Secciones"
       className="fixed inset-x-0 bottom-0 z-[var(--alma-z-nav)] border-t border-[var(--alma-border)] bg-[var(--alma-bg)] pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      <div className="mx-auto grid max-w-[960px] grid-cols-5">
-        {LINKS.map(({ href, label, Icono }) => {
+      <div className="grid grid-cols-5">
+        {NAV_ITEMS.map(({ href, label, Icono }) => {
           const activo = pathname === href || pathname.startsWith(href + '/');
           return (
             <Link

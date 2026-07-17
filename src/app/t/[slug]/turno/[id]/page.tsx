@@ -47,8 +47,10 @@ export default async function TurnoPublicoPage({
     const alias = tenant.settings.alias_mp;
     return (
       <div className="flex flex-col gap-4">
-        <div>
-          <h1 className="voice text-[26px] leading-[1.15]">Falta la seña para confirmar</h1>
+        <div className="rounded-xl border border-[var(--alma-border)] bg-[var(--alma-surface)] p-5 shadow-1">
+          <h1 className="voice text-[28px] leading-[1.1] text-[var(--alma-voice)]">
+            Falta la seña para confirmar
+          </h1>
           {cuando}
           <p className="mt-2 text-sm text-[var(--alma-text-muted)]">
             Tu horario está reservado. Para confirmarlo, dejá la seña de{' '}
@@ -64,7 +66,7 @@ export default async function TurnoPublicoPage({
           </>
         ) : alias ? (
           // Sin cuenta MP conectada: seña por transferencia al alias, confirmación manual.
-          <div className="rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] p-4">
+          <div className="rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface-2)] p-4">
             <p className="text-sm text-[var(--alma-text-muted)]">Transferí la seña al alias</p>
             <p className="mt-1 select-all text-[17px] font-semibold">{alias}</p>
             <p className="mt-2 text-xs text-[var(--alma-text-muted)]">
@@ -82,8 +84,10 @@ export default async function TurnoPublicoPage({
 
   if (turno.estado === 'confirmado' || turno.estado === 'completado') {
     return (
-      <div>
-        <h1 className="voice text-[26px] leading-[1.15]">Listo, tu turno quedó confirmado</h1>
+      <div className="rounded-xl border border-[var(--alma-border)] bg-[var(--alma-surface)] p-5 shadow-1">
+        <h1 className="voice text-[28px] leading-[1.1] text-[var(--alma-voice)]">
+          Listo, tu turno quedó confirmado
+        </h1>
         {cuando}
         {sena > 0 && turno.sena_pagada && (
           <p className="mt-2 text-sm text-[var(--alma-text-muted)]">
@@ -95,8 +99,10 @@ export default async function TurnoPublicoPage({
   }
 
   return (
-    <div>
-      <h1 className="voice text-[26px] leading-[1.15]">Este turno se canceló</h1>
+    <div className="rounded-xl border border-[var(--alma-border)] bg-[var(--alma-surface)] p-5 shadow-1">
+      <h1 className="voice text-[28px] leading-[1.1] text-[var(--alma-voice)]">
+        Este turno se canceló
+      </h1>
       <p className="mt-2 text-sm text-[var(--alma-text-muted)]">
         Si querés, podés{' '}
         <Link href={`/t/${slug}`} className="font-semibold text-[var(--alma-action)]">

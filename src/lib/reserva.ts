@@ -21,7 +21,10 @@ export type DatosReserva = {
   fecha: string; // ya validada con regex
   hora: string; // 'HH:MM'
   nombre: string;
+  apellido: string;
   telefono: string;
+  email: string;
+  fechaNacimiento: string; // 'YYYY-MM-DD'
 };
 
 export type ResultadoReserva =
@@ -49,34 +52,61 @@ export async function crearReservaPublica(
 
   // Reuso del paciente por teléfono normalizado (los cargados a mano tienen formato libre).
   const telNorm = normalizarTelAR(datos.telefono);
-  let patientId: string | null = null;
+  type PacienteExistente = {
+    id: string;
+    telefono: string | null;
+    apellido: string | null;
+    email: string | null;
+    fecha_nacimiento: string | null;
+    archivado: boolean | null;
+  };
+  let existente: PacienteExistente | null = null;
   if (telNorm) {
     const { data: existentes } = await admin
       .from('alma_patients')
-      .select('id, telefono')
+      .select('id, telefono, apellido, email, fecha_nacimiento, archivado')
       .eq('tenant_id', datos.tenantId);
-    patientId =
-      (existentes ?? []).find((p) => normalizarTelAR(p.telefono ?? '') === telNorm)?.id ?? null;
+    existente =
+      ((existentes ?? []) as PacienteExistente[]).find(
+        (p) => normalizarTelAR(p.telefono ?? '') === telNorm,
+      ) ?? null;
   }
 
-  if (patientId) {
+  let patientId: string;
+  if (existente) {
     const { count } = await admin
       .from('alma_appointments')
       .select('id', { count: 'exact', head: true })
       .eq('tenant_id', datos.tenantId)
-      .eq('patient_id', patientId)
+      .eq('patient_id', existente.id)
       .gte('fecha', hoy)
       .in('estado', ['pendiente_sena', 'confirmado']);
     if ((count ?? 0) >= MAX_TURNOS_FUTUROS) {
       return { ok: false, motivo: 'limite' };
     }
+
+    // Enriquecemos los datos que falten y reactivamos si estaba archivado
+    // (vuelve a tener un turno activo). Nunca pisamos datos ya cargados.
+    const enriquecer: Record<string, unknown> = {};
+    if (!existente.apellido && datos.apellido) enriquecer.apellido = datos.apellido;
+    if (!existente.email && datos.email) enriquecer.email = datos.email;
+    if (!existente.fecha_nacimiento && datos.fechaNacimiento)
+      enriquecer.fecha_nacimiento = datos.fechaNacimiento;
+    if (existente.archivado) enriquecer.archivado = false;
+    if (Object.keys(enriquecer).length > 0) {
+      await admin.from('alma_patients').update(enriquecer).eq('id', existente.id);
+    }
+    patientId = existente.id;
   } else {
     const { data: nuevo, error: pacErr } = await admin
       .from('alma_patients')
       .insert({
         tenant_id: datos.tenantId,
         nombre: datos.nombre,
+        apellido: datos.apellido,
         telefono: telNorm ?? datos.telefono,
+        email: datos.email,
+        fecha_nacimiento: datos.fechaNacimiento || null,
       })
       .select('id')
       .single();

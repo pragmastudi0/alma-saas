@@ -3,8 +3,9 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { DiaNav } from '@/components/dia-nav';
 import { TurnoCard, type TurnoCardData } from '@/components/turno-card';
 import { EmptyState } from '@/components/empty-state';
-import { Fab } from '@/components/fab';
+import { Fab, AccionNueva } from '@/components/fab';
 import { MesGrid } from '@/components/mes-grid';
+import { nombrePaciente } from '@/lib/caja';
 import {
   addDias,
   addMeses,
@@ -19,11 +20,6 @@ import {
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const MES = /^\d{4}-\d{2}$/;
-
-function nombrePaciente(rel: unknown): string {
-  const p = Array.isArray(rel) ? rel[0] : rel;
-  return (p as { nombre?: string } | null)?.nombre ?? 'Paciente';
-}
 
 /** Toggle Día | Mes, conservando el contexto actual. */
 function VistaToggle({ vista, dia }: { vista: 'dia' | 'mes'; dia: string }) {
@@ -75,7 +71,10 @@ export default async function AgendaPage({
     const diaDestino = ym === mesActual() ? hoyISO() : `${ym}-01`;
 
     return (
-      <main className="pb-24">
+      <main className="pb-24 md:pb-8">
+        <div className="mb-4 hidden justify-end md:flex">
+          <AccionNueva href={`/agenda/nuevo?d=${hoyISO()}`} label="Nuevo turno" />
+        </div>
         <VistaToggle vista="mes" dia={diaDestino} />
         <DiaNav
           prevHref={`/agenda?v=mes&m=${addMeses(ym, -1)}`}
@@ -92,7 +91,7 @@ export default async function AgendaPage({
 
   const { data } = await supabase
     .from('alma_appointments')
-    .select('id, hora, duracion_min, precio, estado, alma_patients(nombre)')
+    .select('id, hora, duracion_min, precio, estado, alma_patients(nombre, apellido)')
     .eq('fecha', dia)
     .order('hora', { ascending: true });
 
@@ -102,11 +101,14 @@ export default async function AgendaPage({
     duracion_min: r.duracion_min,
     precio: Number(r.precio),
     estado: r.estado,
-    paciente: nombrePaciente(r.alma_patients),
+    paciente: nombrePaciente(r.alma_patients) || 'Paciente',
   }));
 
   return (
-    <main className="pb-24">
+    <main className="pb-24 md:pb-8">
+      <div className="mb-4 hidden justify-end md:flex">
+        <AccionNueva href={`/agenda/nuevo?d=${dia}`} label="Nuevo turno" />
+      </div>
       <VistaToggle vista="dia" dia={dia} />
       <DiaNav
         prevHref={`/agenda?d=${addDias(dia, -1)}`}
@@ -122,7 +124,7 @@ export default async function AgendaPage({
           ctaLabel="Agendar un turno"
         />
       ) : (
-        <ul className="flex flex-col gap-2.5">
+        <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           {turnos.map((t) => (
             <li key={t.id}>
               <TurnoCard t={t} />

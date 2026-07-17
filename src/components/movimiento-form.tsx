@@ -30,7 +30,7 @@ export function MovimientoForm({
     }`;
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="flex flex-col gap-4 md:max-w-xl">
       <input type="hidden" name="tipo" value={tipo} />
       <div className="grid grid-cols-2 gap-2">
         <button type="button" onClick={() => setTipo('ingreso')} className={seg(tipo === 'ingreso')}>

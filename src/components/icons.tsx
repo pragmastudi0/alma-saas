@@ -81,3 +81,30 @@ export function IconoChevron({ dir, className }: { dir: 'left' | 'right'; classN
     </Icono>
   );
 }
+
+export function IconoChat({ className }: { className?: string }) {
+  return (
+    <Icono className={className}>
+      <path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H9l-4 3.5V17H4a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 4 5.5Z" />
+      <path d="M8 10.5h8M8 13.5h5" />
+    </Icono>
+  );
+}
+
+export function IconoLink({ className }: { className?: string }) {
+  return (
+    <Icono className={className}>
+      <path d="M9 15l6-6" />
+      <path d="M10.5 6.5l1.2-1.2a3.5 3.5 0 0 1 5 5L15.5 11.5M8.5 12.5l-1.2 1.2a3.5 3.5 0 0 0 5 5L13.5 17.5" />
+    </Icono>
+  );
+}
+
+export function IconoTarjeta({ className }: { className?: string }) {
+  return (
+    <Icono className={className}>
+      <rect x="3" y="6" width="18" height="12" rx="2" />
+      <path d="M3 10h18M6.5 14.5h4" />
+    </Icono>
+  );
+}

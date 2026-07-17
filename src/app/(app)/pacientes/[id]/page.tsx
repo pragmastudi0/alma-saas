@@ -4,6 +4,7 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { EstadoBadge } from '@/components/estado-badge';
 import { BackLink } from '@/components/back-link';
 import { WhatsAppLink } from '@/components/whatsapp-link';
+import { EliminarPacienteBoton } from '@/components/eliminar-paciente-boton';
 import { horaCorta } from '@/lib/format';
 import { etiquetaDia } from '@/lib/fecha';
 import { waLink } from '@/lib/whatsapp';
@@ -26,11 +27,17 @@ export default async function PacienteDetallePage({
   const supabase = await createServerSupabase();
   const { data: p } = await supabase
     .from('alma_patients')
-    .select('id, nombre, telefono, email, notas')
+    .select('id, nombre, apellido, telefono, email, fecha_nacimiento, notas')
     .eq('id', id)
     .maybeSingle();
 
   if (!p) notFound();
+
+  const nombreCompleto = [p.nombre, p.apellido].filter(Boolean).join(' ').trim();
+  // 'YYYY-MM-DD' → 'DD/MM/YYYY' sin construir Date (evita corrimientos de zona).
+  const nacimiento = p.fecha_nacimiento
+    ? p.fecha_nacimiento.split('-').reverse().join('/')
+    : '';
 
   const { data: turnos } = await supabase
     .from('alma_appointments')
@@ -46,7 +53,7 @@ export default async function PacienteDetallePage({
     <main className="pb-10">
       <header className="mb-5 flex items-center gap-2">
         <BackLink href="/pacientes" />
-        <h1 className="min-w-0 truncate text-[22px] font-semibold">{p.nombre}</h1>
+        <h1 className="min-w-0 truncate text-[22px] font-semibold">{nombreCompleto}</h1>
       </header>
 
       <section className="rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] p-5">
@@ -58,6 +65,10 @@ export default async function PacienteDetallePage({
           <div className="flex justify-between gap-3">
             <dt className="text-[var(--alma-text-muted)]">Correo</dt>
             <dd className="min-w-0 truncate font-medium">{p.email || '—'}</dd>
+          </div>
+          <div className="flex justify-between gap-3">
+            <dt className="text-[var(--alma-text-muted)]">Nacimiento</dt>
+            <dd className="tnum font-medium">{nacimiento || '—'}</dd>
           </div>
         </dl>
 
@@ -92,6 +103,7 @@ export default async function PacienteDetallePage({
         >
           Editar
         </Link>
+        <EliminarPacienteBoton id={p.id} nombre={nombreCompleto || 'este paciente'} />
       </div>
 
       <section className="mt-6">
