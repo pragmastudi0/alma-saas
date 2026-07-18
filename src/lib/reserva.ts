@@ -130,6 +130,7 @@ export async function crearReservaPublica(
       precio: datos.settings.precio_default ?? 0,
       sena_monto: senaMonto,
       estado,
+      origen: 'portal',
     })
     .select('id')
     .single();

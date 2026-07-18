@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getSessionContext } from '@/lib/tenant';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { TurnoCard, type TurnoCardData } from '@/components/turno-card';
+import { EstadoBadge } from '@/components/estado-badge';
 import { EmptyState } from '@/components/empty-state';
 import { Fab, AccionNueva } from '@/components/fab';
 import { nombrePaciente } from '@/lib/caja';
@@ -15,13 +16,21 @@ export default async function HoyPage() {
 
   const dia = hoyISO();
   const supabase = await createServerSupabase();
-  const [{ data }, { data: caja }] = await Promise.all([
+  const [{ data }, { data: caja }, { data: futuros }] = await Promise.all([
     supabase
       .from('alma_appointments')
       .select('id, hora, duracion_min, precio, estado, alma_patients(nombre, apellido)')
       .eq('fecha', dia)
       .order('hora', { ascending: true }),
     supabase.from('alma_cash_entries').select('tipo, monto').eq('fecha', dia),
+    supabase
+      .from('alma_appointments')
+      .select('id, fecha, hora, estado, alma_patients(nombre, apellido)')
+      .gt('fecha', dia)
+      .not('estado', 'in', '("cancelado","ausente")')
+      .order('fecha', { ascending: true })
+      .order('hora', { ascending: true })
+      .limit(6),
   ]);
 
   const ingresosHoy = (caja ?? [])
@@ -38,6 +47,14 @@ export default async function HoyPage() {
     duracion_min: r.duracion_min,
     precio: Number(r.precio),
     estado: r.estado,
+    paciente: nombrePaciente(r.alma_patients) || 'Paciente',
+  }));
+
+  const proximos = (futuros ?? []).map((r) => ({
+    id: r.id,
+    fecha: r.fecha,
+    hora: String(r.hora).slice(0, 5),
+    estado: r.estado as TurnoCardData['estado'],
     paciente: nombrePaciente(r.alma_patients) || 'Paciente',
   }));
 
@@ -108,6 +125,9 @@ export default async function HoyPage() {
       </div>
 
       <section className="mt-6">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-[.08em] text-[var(--alma-text-muted)]">
+          Turnos de hoy
+        </h2>
         {turnos.length === 0 ? (
           <EmptyState
             mensaje="Hoy no tenés turnos. Disfrutá el día."
@@ -124,6 +144,38 @@ export default async function HoyPage() {
           </ul>
         )}
       </section>
+
+      {proximos.length > 0 && (
+        <section className="mt-8">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-[.08em] text-[var(--alma-text-muted)]">
+              Próximos turnos
+            </h2>
+            <Link
+              href="/agenda"
+              className="text-xs font-semibold text-[var(--alma-action)] transition-opacity duration-micro ease-alma hover:opacity-80"
+            >
+              Ver agenda
+            </Link>
+          </div>
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {proximos.map((t) => (
+              <li key={t.id}>
+                <Link
+                  href={`/agenda/${t.id}`}
+                  className="flex items-center gap-3 rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] px-3.5 py-3 transition-colors duration-micro ease-alma hover:border-[var(--alma-text-muted)]"
+                >
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{t.paciente}</span>
+                  <span className="shrink-0 text-xs capitalize text-[var(--alma-text-muted)]">
+                    {etiquetaDia(t.fecha)} · <span className="tnum">{t.hora}</span>
+                  </span>
+                  <EstadoBadge estado={t.estado} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <Fab href={`/agenda/nuevo?d=${dia}`} label="Nuevo turno" />
     </main>
