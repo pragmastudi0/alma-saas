@@ -5,6 +5,7 @@ import { TurnoCard, type TurnoCardData } from '@/components/turno-card';
 import { EmptyState } from '@/components/empty-state';
 import { Fab, AccionNueva } from '@/components/fab';
 import { MesAgenda, type MesTurno } from '@/components/mes-agenda';
+import { MesCalendario } from '@/components/mes-calendario';
 import { nombrePaciente } from '@/lib/caja';
 import {
   addDias,
@@ -21,23 +22,35 @@ import {
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const MES = /^\d{4}-\d{2}$/;
 
+const segBase =
+  'flex-1 rounded-md px-3 py-1.5 text-center text-sm font-semibold transition-colors duration-micro ease-alma';
+const segActivo = 'bg-[var(--alma-surface)] text-[var(--alma-text)] shadow-1';
+const segInactivo = 'text-[var(--alma-text-muted)] hover:text-[var(--alma-text)]';
+const seg = (activo: boolean) => `${segBase} ${activo ? segActivo : segInactivo}`;
+
 /** Toggle Día | Mes, conservando el contexto actual. */
 function VistaToggle({ vista, dia }: { vista: 'dia' | 'mes'; dia: string }) {
-  const base =
-    'flex-1 rounded-md px-3 py-1.5 text-center text-sm font-semibold transition-colors duration-micro ease-alma';
-  const activo = 'bg-[var(--alma-surface)] text-[var(--alma-text)] shadow-1';
-  const inactivo = 'text-[var(--alma-text-muted)] hover:text-[var(--alma-text)]';
-
   return (
     <div className="mb-4 flex gap-1 rounded-lg bg-[var(--alma-surface-2)] p-1">
-      <Link href={`/agenda?d=${dia}`} className={`${base} ${vista === 'dia' ? activo : inactivo}`}>
+      <Link href={`/agenda?d=${dia}`} className={seg(vista === 'dia')}>
         Día
       </Link>
-      <Link
-        href={`/agenda?v=mes&m=${mesDe(dia)}`}
-        className={`${base} ${vista === 'mes' ? activo : inactivo}`}
-      >
+      <Link href={`/agenda?v=mes&m=${mesDe(dia)}`} className={seg(vista === 'mes')}>
         Mes
+      </Link>
+    </div>
+  );
+}
+
+/** Toggle Calendario | Lista dentro de la vista mensual. */
+function MesToggle({ mv, ym }: { mv: 'cal' | 'lista'; ym: string }) {
+  return (
+    <div className="mb-4 flex gap-1 rounded-lg bg-[var(--alma-surface-2)] p-1">
+      <Link href={`/agenda?v=mes&mv=cal&m=${ym}`} className={seg(mv === 'cal')}>
+        Calendario
+      </Link>
+      <Link href={`/agenda?v=mes&mv=lista&m=${ym}`} className={seg(mv === 'lista')}>
+        Lista
       </Link>
     </div>
   );
@@ -46,9 +59,9 @@ function VistaToggle({ vista, dia }: { vista: 'dia' | 'mes'; dia: string }) {
 export default async function AgendaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ d?: string; v?: string; m?: string }>;
+  searchParams: Promise<{ d?: string; v?: string; m?: string; mv?: string }>;
 }) {
-  const { d, v, m } = await searchParams;
+  const { d, v, m, mv: mvParam } = await searchParams;
   const dia = d && FECHA.test(d) ? d : hoyISO();
   const supabase = await createServerSupabase();
 
@@ -72,6 +85,14 @@ export default async function AgendaPage({
       paciente: nombrePaciente(r.alma_patients) || 'Paciente',
     }));
 
+    // Calendario (default, estilo Apple) o lista. Ambas comparten los datos.
+    const mv = mvParam === 'lista' ? 'lista' : 'cal';
+    // Día elegido en el calendario (dentro del mes): del ?d=, si no hoy / día 1.
+    const seleccionado =
+      d && FECHA.test(d) && d.startsWith(ym) ? d : ym === mesActual() ? hoyISO() : `${ym}-01`;
+    const diasConTurno = new Set(turnosMes.map((t) => t.fecha));
+    const turnosDelDia = turnosMes.filter((t) => t.fecha === seleccionado);
+
     // Al volver a "Día" desde el mes: hoy si es el mes actual, si no el día 1.
     const diaDestino = ym === mesActual() ? hoyISO() : `${ym}-01`;
 
@@ -82,13 +103,24 @@ export default async function AgendaPage({
         </div>
         <VistaToggle vista="mes" dia={diaDestino} />
         <DiaNav
-          prevHref={`/agenda?v=mes&m=${addMeses(ym, -1)}`}
-          nextHref={`/agenda?v=mes&m=${addMeses(ym, 1)}`}
+          prevHref={`/agenda?v=mes&mv=${mv}&m=${addMeses(ym, -1)}`}
+          nextHref={`/agenda?v=mes&mv=${mv}&m=${addMeses(ym, 1)}`}
           titulo={etiquetaMes(ym)}
           prevLabel="Mes anterior"
           nextLabel="Mes siguiente"
         />
-        <MesAgenda turnos={turnosMes} hoy={hoyISO()} />
+        <MesToggle mv={mv} ym={ym} />
+        {mv === 'cal' ? (
+          <MesCalendario
+            ym={ym}
+            hoy={hoyISO()}
+            seleccionado={seleccionado}
+            diasConTurno={diasConTurno}
+            turnosDelDia={turnosDelDia}
+          />
+        ) : (
+          <MesAgenda turnos={turnosMes} hoy={hoyISO()} />
+        )}
         <Fab href={`/agenda/nuevo?d=${hoyISO()}`} label="Nuevo turno" />
       </main>
     );
