@@ -18,7 +18,7 @@ export function SideNav() {
           <Flor className="h-[21px] w-[21px] text-verde-600" />
           <span className="voice text-2xl leading-none">alma</span>
         </div>
-        <CampanaNotif />
+        <CampanaNotif variant="side" />
       </div>
 
       <nav aria-label="Secciones" className="flex flex-col gap-1">

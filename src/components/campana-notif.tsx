@@ -9,8 +9,12 @@ import type { NotifTurno } from '@/lib/notif';
 
 const POLL_MS = 25_000;
 
-/** Campanita de turnos nuevos (reservas del portal). Refresca en vivo por polling. */
-export function CampanaNotif() {
+/**
+ * Campanita de turnos nuevos (reservas del portal). Refresca en vivo por polling.
+ * `variant`: 'top' abre el panel hacia abajo-izquierda (barra superior mobile);
+ * 'side' lo abre hacia la derecha (sidebar de desktop, pegado al borde izquierdo).
+ */
+export function CampanaNotif({ variant = 'top' }: { variant?: 'top' | 'side' }) {
   const [count, setCount] = useState(0);
   const [items, setItems] = useState<NotifTurno[]>([]);
   const [abierto, setAbierto] = useState(false);
@@ -70,7 +74,13 @@ export function CampanaNotif() {
             onClick={() => setAbierto(false)}
             className="fixed inset-0 z-40 cursor-default"
           />
-          <div className="absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] shadow-2">
+          <div
+            className={`absolute z-50 overflow-hidden rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] shadow-2 ${
+              variant === 'side'
+                ? 'left-full top-0 ml-2 w-72'
+                : 'right-0 mt-2 w-[min(18rem,calc(100vw-2rem))]'
+            }`}
+          >
             <p className="border-b border-[var(--alma-border)] px-4 py-2.5 text-xs font-semibold uppercase tracking-[.08em] text-[var(--alma-text-muted)]">
               Turnos nuevos
             </p>
