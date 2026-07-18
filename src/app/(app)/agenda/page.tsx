@@ -4,7 +4,7 @@ import { DiaNav } from '@/components/dia-nav';
 import { TurnoCard, type TurnoCardData } from '@/components/turno-card';
 import { EmptyState } from '@/components/empty-state';
 import { Fab, AccionNueva } from '@/components/fab';
-import { MesGrid } from '@/components/mes-grid';
+import { MesAgenda, type MesTurno } from '@/components/mes-agenda';
 import { nombrePaciente } from '@/lib/caja';
 import {
   addDias,
@@ -57,15 +57,20 @@ export default async function AgendaPage({
     const { desde, hasta } = rangoMes(ym);
     const { data } = await supabase
       .from('alma_appointments')
-      .select('fecha, estado')
+      .select('id, fecha, hora, estado, alma_patients(nombre, apellido)')
       .gte('fecha', desde)
-      .lt('fecha', hasta);
+      .lt('fecha', hasta)
+      .neq('estado', 'cancelado')
+      .order('fecha', { ascending: true })
+      .order('hora', { ascending: true });
 
-    const conteos: Record<string, number> = {};
-    for (const r of data ?? []) {
-      if (r.estado === 'cancelado' || r.estado === 'ausente') continue;
-      conteos[r.fecha] = (conteos[r.fecha] ?? 0) + 1;
-    }
+    const turnosMes: MesTurno[] = (data ?? []).map((r) => ({
+      id: r.id,
+      fecha: r.fecha,
+      hora: String(r.hora),
+      estado: r.estado,
+      paciente: nombrePaciente(r.alma_patients) || 'Paciente',
+    }));
 
     // Al volver a "Día" desde el mes: hoy si es el mes actual, si no el día 1.
     const diaDestino = ym === mesActual() ? hoyISO() : `${ym}-01`;
@@ -83,7 +88,7 @@ export default async function AgendaPage({
           prevLabel="Mes anterior"
           nextLabel="Mes siguiente"
         />
-        <MesGrid ym={ym} conteos={conteos} hoy={hoyISO()} />
+        <MesAgenda turnos={turnosMes} hoy={hoyISO()} />
         <Fab href={`/agenda/nuevo?d=${hoyISO()}`} label="Nuevo turno" />
       </main>
     );

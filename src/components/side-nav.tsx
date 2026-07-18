@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Flor } from '@/components/flor';
 import { NAV_ITEMS } from '@/components/nav-items';
+import { CampanaNotif } from '@/components/campana-notif';
 import { logout } from '@/app/(auth)/actions';
 
 /** Navegación lateral fija, solo en desktop (md+). En mobile va la barra inferior. */
@@ -12,9 +13,12 @@ export function SideNav() {
 
   return (
     <aside className="sticky top-0 hidden h-dvh w-[220px] shrink-0 flex-col border-r border-[var(--alma-border)] px-4 py-5 md:flex">
-      <div className="mb-8 flex items-center gap-2 px-2">
-        <Flor className="h-[21px] w-[21px] text-verde-600" />
-        <span className="voice text-2xl leading-none">alma</span>
+      <div className="mb-8 flex items-center justify-between gap-2 pl-2">
+        <div className="flex items-center gap-2">
+          <Flor className="h-[21px] w-[21px] text-verde-600" />
+          <span className="voice text-2xl leading-none">alma</span>
+        </div>
+        <CampanaNotif />
       </div>
 
       <nav aria-label="Secciones" className="flex flex-col gap-1">
