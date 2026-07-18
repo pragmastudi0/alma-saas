@@ -10,7 +10,9 @@ import { getSessionContext } from '@/lib/tenant';
 import { crearPreferenciaSena, siteUrl } from '@/lib/mp';
 import { obtenerCredencialMp } from '@/lib/mp-oauth';
 import { registrarIngresoTurno, nombrePaciente } from '@/lib/caja';
-import type { AgendaState, Estado, MpLinkState } from '@/lib/turno';
+import { calcularSlots } from '@/lib/slots';
+import { diaSemanaDe } from '@/lib/fecha';
+import type { AgendaState, Estado, MpLinkState, HorariosDia, TurnoOcupado } from '@/lib/turno';
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const HORA = /^\d{2}:\d{2}$/;
@@ -268,6 +270,63 @@ export async function cancelarTurno(_prev: AgendaState, formData: FormData): Pro
 /** confirmado → ausente. */
 export async function marcarAusente(_prev: AgendaState, formData: FormData): Promise<AgendaState> {
   return transicionar(formData, ['confirmado'], { estado: 'ausente' });
+}
+
+/**
+ * Disponibilidad de un día para el alta de turno del admin: horarios libres +
+ * turnos ya agendados. No filtra horas pasadas (el profesional puede cargar un
+ * turno del rato anterior). Solo lee horas y nombres del propio tenant (RLS).
+ */
+export async function horariosDelDia(fecha: string, duracionMin: number): Promise<HorariosDia> {
+  const vacio: HorariosDia = { slots: [], ocupados: [], atiende: false };
+  const ctx = await getSessionContext();
+  if (!ctx) return vacio;
+  if (!FECHA.test(fecha) || !Number.isFinite(duracionMin) || duracionMin <= 0) return vacio;
+
+  const supabase = await createServerSupabase();
+  const dow = diaSemanaDe(fecha);
+  const [{ data: dispo }, { data: turnos }, { data: bloqueos }] = await Promise.all([
+    supabase
+      .from('alma_availability')
+      .select('hora_desde, hora_hasta')
+      .eq('tenant_id', ctx.tenantId)
+      .eq('dia_semana', dow),
+    supabase
+      .from('alma_appointments')
+      .select('hora, duracion_min, estado, alma_patients(nombre, apellido)')
+      .eq('tenant_id', ctx.tenantId)
+      .eq('fecha', fecha)
+      .not('estado', 'in', '("cancelado","ausente")')
+      .order('hora'),
+    supabase
+      .from('alma_agenda_blocks')
+      .select('hora_desde, hora_hasta')
+      .eq('tenant_id', ctx.tenantId)
+      .eq('fecha', fecha),
+  ]);
+
+  const slots = calcularSlots({
+    disponibilidad: (dispo ?? []).map((d) => ({
+      desde: String(d.hora_desde).slice(0, 5),
+      hasta: String(d.hora_hasta).slice(0, 5),
+    })),
+    ocupados: (turnos ?? []).map((t) => ({ hora: String(t.hora), duracion_min: t.duracion_min })),
+    bloqueos: (bloqueos ?? []).map((b) => ({
+      desde: b.hora_desde ? String(b.hora_desde).slice(0, 5) : '00:00',
+      hasta: b.hora_hasta ? String(b.hora_hasta).slice(0, 5) : '24:00',
+    })),
+    duracionMin,
+    ahoraMin: null,
+  });
+
+  const ocupados: TurnoOcupado[] = (turnos ?? []).map((t) => ({
+    hora: String(t.hora).slice(0, 5),
+    duracion_min: t.duracion_min,
+    paciente: nombrePaciente(t.alma_patients) || 'Paciente',
+    estado: t.estado as Estado,
+  }));
+
+  return { slots, ocupados, atiende: (dispo ?? []).length > 0 };
 }
 
 /**

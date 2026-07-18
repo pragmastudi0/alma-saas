@@ -1,7 +1,7 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 import { TurnoForm } from '@/components/turno-form';
 import { BackLink } from '@/components/back-link';
-import { crearTurno } from '../actions';
+import { crearTurno, horariosDelDia } from '../actions';
 import { hoyISO } from '@/lib/fecha';
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
@@ -27,6 +27,8 @@ export default async function NuevoTurnoPage({
   ]);
 
   const s = (tenant?.settings ?? {}) as Settings;
+  const duracion = s.duracion_default ?? 45;
+  const horariosIniciales = await horariosDelDia(dia, duracion);
 
   return (
     <main className="pb-10">
@@ -39,10 +41,11 @@ export default async function NuevoTurnoPage({
         action={crearTurno}
         submitLabel="Guardar turno"
         pacientes={pacientes ?? []}
+        horariosIniciales={horariosIniciales}
         defaults={{
           fecha: dia,
           hora: '09:00',
-          duracion_min: s.duracion_default ?? 45,
+          duracion_min: duracion,
           precio: s.precio_default ?? 0,
           sena_monto: s.sena_default ?? 0,
           patient_id: p,
