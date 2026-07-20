@@ -22,6 +22,7 @@ const reservaSchema = z.object({
   telefono: z.string().trim().min(6, 'Dejanos un teléfono para avisarte.').max(40),
   email: z.string().trim().email('Necesitamos un email válido.').max(120),
   fecha_nacimiento: z.string().regex(FECHA, 'Poné tu fecha de nacimiento.'),
+  service_id: z.string().uuid().optional().or(z.literal('')),
 });
 
 const MENSAJES: Record<string, string> = {
@@ -100,6 +101,7 @@ export async function reservarTurno(
     telefono: v.telefono,
     email: v.email,
     fechaNacimiento: v.fecha_nacimiento,
+    serviceId: v.service_id || undefined,
   });
 
   if (!resultado.ok) {
