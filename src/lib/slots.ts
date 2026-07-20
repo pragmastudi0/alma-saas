@@ -66,25 +66,59 @@ export async function slotsDelDia(
   admin: SupabaseClient,
   tenant: { id: string; timezone: string; duracionMin: number },
   fechaISO: string,
+  employeeId?: string,
 ): Promise<string[]> {
-  const [{ data: dispo }, { data: turnos }, { data: bloqueos }] = await Promise.all([
-    admin
+  // Disponibilidad: si hay employeeId, buscar primero la del empleado;
+  // si no tiene, usar la general del tenant.
+  let dispoQuery = admin
+    .from('alma_availability')
+    .select('hora_desde, hora_hasta')
+    .eq('tenant_id', tenant.id)
+    .eq('dia_semana', diaSemanaDe(fechaISO));
+  if (employeeId) {
+    // Intentar disponibilidad del empleado
+    const { data: empDispo } = await admin
       .from('alma_availability')
       .select('hora_desde, hora_hasta')
       .eq('tenant_id', tenant.id)
-      .eq('dia_semana', diaSemanaDe(fechaISO)),
-    admin
-      .from('alma_appointments')
-      .select('hora, duracion_min')
-      .eq('tenant_id', tenant.id)
-      .eq('fecha', fechaISO)
-      .not('estado', 'in', '("cancelado","ausente")'),
+      .eq('dia_semana', diaSemanaDe(fechaISO))
+      .eq('employee_id', employeeId);
+    if (empDispo && empDispo.length > 0) {
+      dispoQuery = admin
+        .from('alma_availability')
+        .select('hora_desde, hora_hasta')
+        .eq('tenant_id', tenant.id)
+        .eq('dia_semana', diaSemanaDe(fechaISO))
+        .eq('employee_id', employeeId);
+    }
+  }
+
+  // Turnos del día: filtrar por employee si corresponde
+  let turnosQuery = admin
+    .from('alma_appointments')
+    .select('hora, duracion_min, employee_id')
+    .eq('tenant_id', tenant.id)
+    .eq('fecha', fechaISO)
+    .not('estado', 'in', '("cancelado","ausente")');
+
+  const [{ data: dispo }, { data: bloqueos }] = await Promise.all([
+    dispoQuery,
     admin
       .from('alma_agenda_blocks')
       .select('hora_desde, hora_hasta')
       .eq('tenant_id', tenant.id)
       .eq('fecha', fechaISO),
   ]);
+
+  let turnos = (await turnosQuery).data ?? [];
+
+  // Si hay employeeId, filtrar solo los turnos de ese empleado (o sin asignar,
+  // porque un turno sin employee_id afecta a todos)
+  if (employeeId) {
+    turnos = turnos.filter(
+      (t) => t.employee_id === null || t.employee_id === employeeId,
+    );
+  }
 
   let ahoraMin: number | null = null;
   if (fechaISO === hoyISO(tenant.timezone)) {
@@ -102,7 +136,7 @@ export async function slotsDelDia(
       desde: String(d.hora_desde).slice(0, 5),
       hasta: String(d.hora_hasta).slice(0, 5),
     })),
-    ocupados: (turnos ?? []).map((t) => ({
+    ocupados: turnos.map((t) => ({
       hora: String(t.hora),
       duracion_min: t.duracion_min,
     })),

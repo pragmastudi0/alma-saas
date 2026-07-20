@@ -59,11 +59,19 @@ function MesToggle({ mv, ym }: { mv: 'cal' | 'lista'; ym: string }) {
 export default async function AgendaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ d?: string; v?: string; m?: string; mv?: string }>;
+  searchParams: Promise<{ d?: string; v?: string; m?: string; mv?: string; emp?: string }>;
 }) {
-  const { d, v, m, mv: mvParam } = await searchParams;
+  const { d, v, m, mv: mvParam, emp } = await searchParams;
   const dia = d && FECHA.test(d) ? d : hoyISO();
   const supabase = await createServerSupabase();
+
+  const { data: empleados } = await supabase
+    .from('alma_employees')
+    .select('id, nombre')
+    .eq('activo', true)
+    .order('nombre');
+
+  const employeeId = emp ?? '';
 
   if (v === 'mes') {
     const ym = m && MES.test(m) ? m : mesActual();
@@ -127,11 +135,15 @@ export default async function AgendaPage({
     );
   }
 
-  const { data } = await supabase
+  let query = supabase
     .from('alma_appointments')
     .select('id, hora, duracion_min, precio, estado, alma_patients(nombre, apellido), alma_employees(nombre)')
     .eq('fecha', dia)
     .order('hora', { ascending: true });
+  if (employeeId) {
+    query = query.eq('employee_id', employeeId);
+  }
+  const { data } = await query;
 
   const turnos: TurnoCardData[] = (data ?? []).map((r) => ({
     id: r.id,
@@ -146,20 +158,49 @@ export default async function AgendaPage({
   return (
     <main className="pb-24 md:pb-8">
       <div className="mb-4 hidden justify-end md:flex">
-        <AccionNueva href={`/agenda/nuevo?d=${dia}`} label="Nuevo turno" />
+        <AccionNueva href={`/agenda/nuevo?d=${dia}${employeeId ? `&emp=${employeeId}` : ''}`} label="Nuevo turno" />
       </div>
       <VistaToggle vista="dia" dia={dia} />
       <DiaNav
-        prevHref={`/agenda?d=${addDias(dia, -1)}`}
-        nextHref={`/agenda?d=${addDias(dia, 1)}`}
+        prevHref={`/agenda?d=${addDias(dia, -1)}${employeeId ? `&emp=${employeeId}` : ''}`}
+        nextHref={`/agenda?d=${addDias(dia, 1)}${employeeId ? `&emp=${employeeId}` : ''}`}
         titulo={etiquetaDia(dia)}
         subtitulo={etiquetaRelativa(dia)}
       />
 
+      {/* Filtro por empleado */}
+      {empleados && empleados.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          <Link
+            href={`/agenda?d=${dia}`}
+            className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-semibold transition-colors duration-micro ease-alma ${
+              !employeeId
+                ? 'bg-[var(--alma-action)] text-[var(--alma-on-action)]'
+                : 'bg-[var(--alma-surface-2)] text-[var(--alma-text-muted)] hover:text-[var(--alma-text)]'
+            }`}
+          >
+            Todos
+          </Link>
+          {empleados.map((e) => (
+            <Link
+              key={e.id}
+              href={`/agenda?d=${dia}&emp=${e.id}`}
+              className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-semibold transition-colors duration-micro ease-alma ${
+                employeeId === e.id
+                  ? 'bg-[var(--alma-action)] text-[var(--alma-on-action)]'
+                  : 'bg-[var(--alma-surface-2)] text-[var(--alma-text-muted)] hover:text-[var(--alma-text)]'
+              }`}
+            >
+              {e.nombre}
+            </Link>
+          ))}
+        </div>
+      )}
+
       {turnos.length === 0 ? (
         <EmptyState
           mensaje="Este día está libre."
-          ctaHref={`/agenda/nuevo?d=${dia}`}
+          ctaHref={`/agenda/nuevo?d=${dia}${employeeId ? `&emp=${employeeId}` : ''}`}
           ctaLabel="Agendar un turno"
         />
       ) : (
@@ -172,7 +213,7 @@ export default async function AgendaPage({
         </ul>
       )}
 
-      <Fab href={`/agenda/nuevo?d=${dia}`} label="Nuevo turno" />
+      <Fab href={`/agenda/nuevo?d=${dia}${employeeId ? `&emp=${employeeId}` : ''}`} label="Nuevo turno" />
     </main>
   );
 }

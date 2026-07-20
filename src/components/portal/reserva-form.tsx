@@ -19,6 +19,8 @@ export function ReservaForm({
   sena,
   serviceId,
   serviceNombre,
+  employeeId,
+  employeeNombre,
 }: {
   slug: string;
   fecha: string;
@@ -27,6 +29,8 @@ export function ReservaForm({
   sena: number;
   serviceId?: string;
   serviceNombre?: string | null;
+  employeeId?: string;
+  employeeNombre?: string | null;
 }) {
   const [state, formAction, pending] = useActionState<ReservaState, FormData>(reservarTurno, {});
   const [hora, setHora] = useState<string | null>(null);
@@ -36,6 +40,7 @@ export function ReservaForm({
       <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="fecha" value={fecha} />
       {serviceId && <input type="hidden" name="service_id" value={serviceId} />}
+      {employeeId && <input type="hidden" name="employee_id" value={employeeId} />}
       {hora && <input type="hidden" name="hora" value={hora} />}
       {/* Honeypot: oculto para humanos. */}
       <input
@@ -148,9 +153,11 @@ export function ReservaForm({
       <p className="text-center text-xs text-[var(--alma-text-muted)]">
         {sena > 0
           ? `Para confirmar el turno vas a dejar una seña de ${pesos(sena)} por Mercado Pago.`
-          : serviceNombre
-            ? `Tu turno de ${serviceNombre} te espera.`
-            : `Al reservar, ${nombreProfesional} te va a estar esperando.`}
+          : employeeNombre
+            ? `Tu turno con ${employeeNombre} te espera.`
+            : serviceNombre
+              ? `Tu turno de ${serviceNombre} te espera.`
+              : `Al reservar, ${nombreProfesional} te va a estar esperando.`}
       </p>
     </form>
   );
