@@ -12,6 +12,7 @@ export type TurnoCardData = {
   precio: number;
   estado: Estado;
   paciente: string;
+  empleado?: string;
 };
 
 export function TurnoCard({ t, conAcciones = true }: { t: TurnoCardData; conAcciones?: boolean }) {
@@ -24,6 +25,7 @@ export function TurnoCard({ t, conAcciones = true }: { t: TurnoCardData; conAcci
           <p className="mt-0.5 text-xs text-[var(--alma-text-muted)]">
             <span className="tnum">{t.duracion_min}</span> min ·{' '}
             <span className="tnum">{pesos(t.precio)}</span>
+            {t.empleado && <span> · {t.empleado}</span>}
           </p>
         </div>
         <EstadoBadge estado={t.estado} />

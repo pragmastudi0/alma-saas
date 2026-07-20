@@ -19,13 +19,13 @@ export default async function HoyPage() {
   const [{ data }, { data: caja }, { data: futuros }] = await Promise.all([
     supabase
       .from('alma_appointments')
-      .select('id, hora, duracion_min, precio, estado, alma_patients(nombre, apellido)')
+      .select('id, hora, duracion_min, precio, estado, alma_patients(nombre, apellido), alma_employees(nombre)')
       .eq('fecha', dia)
       .order('hora', { ascending: true }),
     supabase.from('alma_cash_entries').select('tipo, monto').eq('fecha', dia),
     supabase
       .from('alma_appointments')
-      .select('id, fecha, hora, estado, alma_patients(nombre, apellido)')
+      .select('id, fecha, hora, estado, alma_patients(nombre, apellido), alma_employees(nombre)')
       .gt('fecha', dia)
       .not('estado', 'in', '("cancelado","ausente")')
       .order('fecha', { ascending: true })
@@ -48,6 +48,7 @@ export default async function HoyPage() {
     precio: Number(r.precio),
     estado: r.estado,
     paciente: nombrePaciente(r.alma_patients) || 'Paciente',
+    empleado: (r.alma_employees as { nombre?: string } | null)?.nombre ?? undefined,
   }));
 
   const proximos = (futuros ?? []).map((r) => ({
@@ -56,6 +57,7 @@ export default async function HoyPage() {
     hora: String(r.hora).slice(0, 5),
     estado: r.estado as TurnoCardData['estado'],
     paciente: nombrePaciente(r.alma_patients) || 'Paciente',
+    empleado: (r.alma_employees as { nombre?: string } | null)?.nombre ?? undefined,
   }));
 
   // Para la cifra del hero contamos los que siguen en pie.
@@ -168,6 +170,7 @@ export default async function HoyPage() {
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">{t.paciente}</span>
                   <span className="shrink-0 text-xs capitalize text-[var(--alma-text-muted)]">
                     {etiquetaDia(t.fecha)} · <span className="tnum">{t.hora}</span>
+                    {t.empleado && <span> · {t.empleado}</span>}
                   </span>
                   <EstadoBadge estado={t.estado} />
                 </Link>

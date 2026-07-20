@@ -10,6 +10,7 @@ export type MesTurno = {
   hora: string;
   estado: Estado;
   paciente: string;
+  empleado?: string;
 };
 
 /**
@@ -52,6 +53,7 @@ export function MesAgenda({ turnos, hoy }: { turnos: MesTurno[]; hoy: string }) 
                 >
                   <span className="tnum shrink-0 text-sm font-semibold">{horaCorta(t.hora)}</span>
                   <span className="min-w-0 flex-1 truncate text-sm">{t.paciente}</span>
+                  {t.empleado && <span className="shrink-0 text-xs text-[var(--alma-text-muted)]">{t.empleado}</span>}
                   <EstadoBadge estado={t.estado} />
                 </Link>
               </li>

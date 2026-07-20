@@ -70,7 +70,7 @@ export default async function AgendaPage({
     const { desde, hasta } = rangoMes(ym);
     const { data } = await supabase
       .from('alma_appointments')
-      .select('id, fecha, hora, estado, alma_patients(nombre, apellido)')
+      .select('id, fecha, hora, estado, alma_patients(nombre, apellido), alma_employees(nombre)')
       .gte('fecha', desde)
       .lt('fecha', hasta)
       .neq('estado', 'cancelado')
@@ -83,6 +83,7 @@ export default async function AgendaPage({
       hora: String(r.hora),
       estado: r.estado,
       paciente: nombrePaciente(r.alma_patients) || 'Paciente',
+      empleado: (r.alma_employees as { nombre?: string } | null)?.nombre ?? undefined,
     }));
 
     // Calendario (default, estilo Apple) o lista. Ambas comparten los datos.
@@ -128,7 +129,7 @@ export default async function AgendaPage({
 
   const { data } = await supabase
     .from('alma_appointments')
-    .select('id, hora, duracion_min, precio, estado, alma_patients(nombre, apellido)')
+    .select('id, hora, duracion_min, precio, estado, alma_patients(nombre, apellido), alma_employees(nombre)')
     .eq('fecha', dia)
     .order('hora', { ascending: true });
 
@@ -139,6 +140,7 @@ export default async function AgendaPage({
     precio: Number(r.precio),
     estado: r.estado,
     paciente: nombrePaciente(r.alma_patients) || 'Paciente',
+    empleado: (r.alma_employees as { nombre?: string } | null)?.nombre ?? undefined,
   }));
 
   return (
