@@ -204,6 +204,34 @@ export async function toggleEmpleado(formData: FormData): Promise<void> {
   revalidatePath('/ajustes');
 }
 
+// ─── Asignación empleados ↔ servicio ────────────────────
+
+export async function toggleEmpleadoServicio(formData: FormData): Promise<void> {
+  const ctx = await getSessionContext();
+  if (!ctx) return;
+
+  const serviceId = formData.get('service_id');
+  const employeeId = formData.get('employee_id');
+  const asignar = formData.get('asignar') === 'true';
+  if (typeof serviceId !== 'string' || typeof employeeId !== 'string') return;
+
+  const supabase = await createServerSupabase();
+  if (asignar) {
+    await supabase.from('alma_service_employees').insert({
+      tenant_id: ctx.tenantId,
+      service_id: serviceId,
+      employee_id: employeeId,
+    });
+  } else {
+    await supabase
+      .from('alma_service_employees')
+      .delete()
+      .eq('service_id', serviceId)
+      .eq('employee_id', employeeId);
+  }
+  revalidatePath('/ajustes');
+}
+
 /** Desconecta la cuenta de Mercado Pago del tenant (borra sus credenciales). */
 export async function desconectarMp(): Promise<void> {
   const ctx = await getSessionContext();

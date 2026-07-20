@@ -90,3 +90,74 @@ begin
   end loop;
 end;
 $$;
+
+-- ============================================================
+-- alma_service_employees (qué empleados pueden hacer cada servicio)
+-- ============================================================
+create table if not exists public.alma_service_employees (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.alma_tenants (id) on delete cascade,
+  service_id uuid not null references public.alma_services (id) on delete cascade,
+  employee_id uuid not null references public.alma_employees (id) on delete cascade,
+  unique (service_id, employee_id)
+);
+
+create index if not exists alma_service_employees_service_idx on public.alma_service_employees (service_id);
+create index if not exists alma_service_employees_employee_idx on public.alma_service_employees (employee_id);
+
+alter table public.alma_service_employees enable row level security;
+revoke all on public.alma_service_employees from anon;
+
+do $$
+declare
+  t text := 'alma_service_employees';
+begin
+  execute format(
+    'create policy %1$s_select on public.%1$s for select to authenticated using (tenant_id = public.alma_current_tenant_id())', t);
+  execute format(
+    'create policy %1$s_insert on public.%1$s for insert to authenticated with check (tenant_id = public.alma_current_tenant_id())', t);
+  execute format(
+    'create policy %1$s_update on public.%1$s for update to authenticated using (tenant_id = public.alma_current_tenant_id()) with check (tenant_id = public.alma_current_tenant_id())', t);
+  execute format(
+    'create policy %1$s_delete on public.%1$s for delete to authenticated using (tenant_id = public.alma_current_tenant_id())', t);
+end;
+$$;
+
+-- ============================================================
+-- Actualización del trigger anti-solape: incluye employee_id
+-- Dos turnos con diferente empleado NO se solapan aunque tengan
+-- la misma fecha y hora (empleados distintos atienden distinto).
+-- employee_id NULL = cualquiera (comportamiento original).
+-- ============================================================
+create or replace function public.alma_appointments_check_overlap()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  -- Cancelado o ausente no ocupan la agenda: no se controlan.
+  if new.estado in ('cancelado', 'ausente') then
+    return new;
+  end if;
+
+  if exists (
+    select 1
+    from public.alma_appointments a
+    where a.tenant_id = new.tenant_id
+      and a.id <> new.id
+      and a.estado not in ('cancelado', 'ausente')
+      -- Mismo empleado (o ambos null = conflicto general)
+      and a.employee_id is not distinct from new.employee_id
+      -- Solape de rangos [inicio, fin): s1 < e2  AND  s2 < e1 (adyacentes no cuentan).
+      and (new.fecha + new.hora)
+            < (a.fecha + a.hora + make_interval(mins => a.duracion_min))
+      and (a.fecha + a.hora)
+            < (new.fecha + new.hora + make_interval(mins => new.duracion_min))
+  ) then
+    raise exception 'Ese horario se superpone con otro turno.'
+      using errcode = '23P01', hint = 'alma_overlap';
+  end if;
+
+  return new;
+end;
+$$;

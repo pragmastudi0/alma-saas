@@ -15,14 +15,22 @@ type Servicio = {
   activo: boolean;
 };
 
+type Empleado = { id: string; nombre: string };
+
 export function ServiciosList({
   servicios,
+  empleados,
+  empleadosPorServicio,
   onGuardar,
   onToggle,
+  onToggleEmpleado,
 }: {
   servicios: Servicio[];
+  empleados: Empleado[];
+  empleadosPorServicio: Record<string, string[]>;
   onGuardar: (prev: AjustesState, formData: FormData) => Promise<AjustesState>;
   onToggle: (formData: FormData) => Promise<void>;
+  onToggleEmpleado: (formData: FormData) => Promise<void>;
 }) {
   const [editId, setEditId] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
@@ -33,7 +41,10 @@ export function ServiciosList({
       <ServicioForm
         key={editId ?? 'nuevo'}
         servicio={s}
+        empleados={empleados}
+        empleadosAsignados={s ? empleadosPorServicio[s.id] ?? [] : []}
         onGuardar={onGuardar}
+        onToggleEmpleado={onToggleEmpleado}
         onCancel={() => {
           setEditId(null);
           setCreando(false);
@@ -63,45 +74,67 @@ export function ServiciosList({
         </p>
       ) : (
         <ul className="flex flex-col gap-1.5">
-          {servicios.map((s) => (
-            <li
-              key={s.id}
-              className="flex items-center gap-3 rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] px-3.5 py-3"
-            >
-              <div className="min-w-0 flex-1">
-                <p className={`text-sm font-medium ${!s.activo ? 'text-[var(--alma-text-muted)] line-through' : ''}`}>
-                  {s.nombre}
-                </p>
-                <p className="tnum text-xs text-[var(--alma-text-muted)]">
-                  {pesos(Number(s.precio))} · {s.duracion_min} min
-                  {Number(s.sena_monto) > 0 && ` · seña ${pesos(Number(s.sena_monto))}`}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const form = new FormData();
-                  form.set('id', s.id);
-                  form.set('activo', String(!s.activo));
-                  onToggle(form);
-                }}
-                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors duration-micro ease-alma ${
-                  s.activo
-                    ? 'bg-[var(--success-soft)] text-[var(--success-600)]'
-                    : 'bg-[var(--error-soft)] text-[var(--error-600)]'
-                }`}
+          {servicios.map((s) => {
+            const empIds = empleadosPorServicio[s.id] ?? [];
+            const empNombres = empleados.filter((e) => empIds.includes(e.id)).map((e) => e.nombre);
+            return (
+              <li
+                key={s.id}
+                className="rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] px-3.5 py-3"
               >
-                {s.activo ? 'Activo' : 'Inactivo'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditId(s.id)}
-                className="text-xs font-semibold text-[var(--alma-text-muted)] transition-opacity duration-micro ease-alma hover:opacity-80"
-              >
-                Editar
-              </button>
-            </li>
-          ))}
+                <div className="flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm font-medium ${!s.activo ? 'text-[var(--alma-text-muted)] line-through' : ''}`}>
+                      {s.nombre}
+                    </p>
+                    <p className="tnum text-xs text-[var(--alma-text-muted)]">
+                      {pesos(Number(s.precio))} · {s.duracion_min} min
+                      {Number(s.sena_monto) > 0 && ` · seña ${pesos(Number(s.sena_monto))}`}
+                    </p>
+                    {empNombres.length > 0 && (
+                      <p className="mt-0.5 text-xs text-[var(--alma-text-muted)]">
+                        {empNombres.join(', ')}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditId(s.id)}
+                    className="text-xs font-semibold text-[var(--alma-action)] transition-opacity duration-micro ease-alma hover:opacity-80"
+                  >
+                    Editar
+                  </button>
+                </div>
+                {s.activo && empleados.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5 border-t border-[var(--alma-border)] pt-2">
+                    {empleados.map((e) => {
+                      const asignado = empIds.includes(e.id);
+                      return (
+                        <button
+                          key={e.id}
+                          type="button"
+                          onClick={() => {
+                            const form = new FormData();
+                            form.set('service_id', s.id);
+                            form.set('employee_id', e.id);
+                            form.set('asignar', String(!asignado));
+                            onToggleEmpleado(form);
+                          }}
+                          className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors duration-micro ease-alma ${
+                            asignado
+                              ? 'bg-[var(--alma-action)] text-[var(--alma-on-action)]'
+                              : 'border border-[var(--alma-border)] text-[var(--alma-text-muted)] hover:border-[var(--alma-text-muted)]'
+                          }`}
+                        >
+                          {e.nombre}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
@@ -110,11 +143,17 @@ export function ServiciosList({
 
 function ServicioForm({
   servicio,
+  empleados,
+  empleadosAsignados,
   onGuardar,
+  onToggleEmpleado,
   onCancel,
 }: {
   servicio?: Servicio;
+  empleados: Empleado[];
+  empleadosAsignados: string[];
   onGuardar: (prev: AjustesState, formData: FormData) => Promise<AjustesState>;
+  onToggleEmpleado: (formData: FormData) => Promise<void>;
   onCancel: () => void;
 }) {
   const [state, formAction, pending] = useActionState(onGuardar, {});
@@ -170,6 +209,39 @@ function ServicioForm({
           />
         </label>
       </div>
+
+      {servicio && empleados.length > 0 && (
+        <div className="border-t border-[var(--alma-border)] pt-3">
+          <p className="mb-2 text-xs font-semibold text-[var(--alma-text-muted)]">
+            Empleados que pueden hacer este servicio
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {empleados.map((e) => {
+              const asignado = empleadosAsignados.includes(e.id);
+              return (
+                <button
+                  key={e.id}
+                  type="button"
+                  onClick={() => {
+                    const form = new FormData();
+                    form.set('service_id', servicio.id);
+                    form.set('employee_id', e.id);
+                    form.set('asignar', String(!asignado));
+                    onToggleEmpleado(form);
+                  }}
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors duration-micro ease-alma ${
+                    asignado
+                      ? 'bg-[var(--alma-action)] text-[var(--alma-on-action)]'
+                      : 'border border-[var(--alma-border)] text-[var(--alma-text-muted)] hover:border-[var(--alma-text-muted)]'
+                  }`}
+                >
+                  {e.nombre}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {state.error && (
         <p role="alert" className="text-sm text-[var(--error-600)]">
