@@ -26,6 +26,7 @@ export type DatosReserva = {
   email: string;
   fechaNacimiento: string; // 'YYYY-MM-DD'
   serviceId?: string;
+  employeeId?: string;
 };
 
 type ServicioReserva = {
@@ -64,6 +65,7 @@ export async function crearReservaPublica(
     admin,
     { id: datos.tenantId, timezone: datos.timezone, duracionMin },
     datos.fecha,
+    datos.employeeId,
   );
   if (!slots.includes(datos.hora)) {
     return { ok: false, motivo: 'sin_disponibilidad' };
@@ -152,6 +154,7 @@ export async function crearReservaPublica(
       estado,
       origen: 'portal',
       service_id: servicio?.id ?? null,
+      employee_id: datos.employeeId ?? null,
     })
     .select('id')
     .single();
