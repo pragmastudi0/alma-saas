@@ -55,41 +55,15 @@ alter table public.alma_availability
 -- ============================================================
 -- updated_at triggers
 -- ============================================================
+drop trigger if exists alma_services_updated_at on public.alma_services;
 create trigger alma_services_updated_at
   before update on public.alma_services
   for each row execute function public.alma_set_updated_at();
 
+drop trigger if exists alma_employees_updated_at on public.alma_employees;
 create trigger alma_employees_updated_at
   before update on public.alma_employees
   for each row execute function public.alma_set_updated_at();
-
--- ============================================================
--- RLS
--- ============================================================
-alter table public.alma_services enable row level security;
-alter table public.alma_employees enable row level security;
-
--- anon no toca
-revoke all on public.alma_services, public.alma_employees from anon;
-
--- Políticas automáticas (mismo patrón que F0)
-do $$
-declare
-  t text;
-begin
-  foreach t in array array['alma_services', 'alma_employees']
-  loop
-    execute format(
-      'create policy %1$s_select on public.%1$s for select to authenticated using (tenant_id = public.alma_current_tenant_id())', t);
-    execute format(
-      'create policy %1$s_insert on public.%1$s for insert to authenticated with check (tenant_id = public.alma_current_tenant_id())', t);
-    execute format(
-      'create policy %1$s_update on public.%1$s for update to authenticated using (tenant_id = public.alma_current_tenant_id()) with check (tenant_id = public.alma_current_tenant_id())', t);
-    execute format(
-      'create policy %1$s_delete on public.%1$s for delete to authenticated using (tenant_id = public.alma_current_tenant_id())', t);
-  end loop;
-end;
-$$;
 
 -- ============================================================
 -- alma_service_employees (qué empleados pueden hacer cada servicio)
@@ -105,21 +79,32 @@ create table if not exists public.alma_service_employees (
 create index if not exists alma_service_employees_service_idx on public.alma_service_employees (service_id);
 create index if not exists alma_service_employees_employee_idx on public.alma_service_employees (employee_id);
 
+-- ============================================================
+-- RLS (alma_services + alma_employees + alma_service_employees)
+-- ============================================================
+alter table public.alma_services enable row level security;
+alter table public.alma_employees enable row level security;
 alter table public.alma_service_employees enable row level security;
-revoke all on public.alma_service_employees from anon;
 
+-- anon no toca
+revoke all on public.alma_services, public.alma_employees, public.alma_service_employees from anon;
+
+-- Políticas automáticas (mismo patrón que F0, con drop previo para ser idempotente)
 do $$
 declare
-  t text := 'alma_service_employees';
+  t text;
 begin
-  execute format(
-    'create policy %1$s_select on public.%1$s for select to authenticated using (tenant_id = public.alma_current_tenant_id())', t);
-  execute format(
-    'create policy %1$s_insert on public.%1$s for insert to authenticated with check (tenant_id = public.alma_current_tenant_id())', t);
-  execute format(
-    'create policy %1$s_update on public.%1$s for update to authenticated using (tenant_id = public.alma_current_tenant_id()) with check (tenant_id = public.alma_current_tenant_id())', t);
-  execute format(
-    'create policy %1$s_delete on public.%1$s for delete to authenticated using (tenant_id = public.alma_current_tenant_id())', t);
+  foreach t in array array['alma_services', 'alma_employees', 'alma_service_employees']
+  loop
+    execute format('drop policy if exists %I on public.%I', t || '_select', t);
+    execute format('create policy %I on public.%I for select to authenticated using (tenant_id = public.alma_current_tenant_id())', t || '_select', t);
+    execute format('drop policy if exists %I on public.%I', t || '_insert', t);
+    execute format('create policy %I on public.%I for insert to authenticated with check (tenant_id = public.alma_current_tenant_id())', t || '_insert', t);
+    execute format('drop policy if exists %I on public.%I', t || '_update', t);
+    execute format('create policy %I on public.%I for update to authenticated using (tenant_id = public.alma_current_tenant_id()) with check (tenant_id = public.alma_current_tenant_id())', t || '_update', t);
+    execute format('drop policy if exists %I on public.%I', t || '_delete', t);
+    execute format('create policy %I on public.%I for delete to authenticated using (tenant_id = public.alma_current_tenant_id())', t || '_delete', t);
+  end loop;
 end;
 $$;
 
