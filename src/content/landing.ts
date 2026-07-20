@@ -70,7 +70,7 @@ export const FEATURES: Feature[] = [
 ];
 
 export const PRECIO = {
-  montoUSD: 50,
+  montoUSD: 30,
   periodo: 'mes',
   nota: 'Sin permanencia. Cancelás cuando quieras.',
   incluye: [
@@ -103,6 +103,6 @@ export const FAQ: { pregunta: string; respuesta: string }[] = [
   {
     pregunta: '¿El precio cambia?',
     respuesta:
-      'Son 50 USD por mes, sin permanencia. Sumamos funciones nuevas seguido y ya vienen incluidas.',
+      'Son 30 USD por mes, sin permanencia. Sumamos funciones nuevas seguido y ya vienen incluidas.',
   },
 ];
