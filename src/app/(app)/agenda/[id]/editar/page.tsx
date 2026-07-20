@@ -9,7 +9,7 @@ export default async function EditarTurnoPage({ params }: { params: Promise<{ id
   const { id } = await params;
 
   const supabase = await createServerSupabase();
-  const [{ data }, { data: servicios }, { data: empleados }] = await Promise.all([
+  const [{ data }, { data: servicios }, { data: empleados }, { data: svcEmps }] = await Promise.all([
     supabase
       .from('alma_appointments')
       .select('id, fecha, hora, duracion_min, precio, sena_monto, service_id, employee_id')
@@ -25,9 +25,18 @@ export default async function EditarTurnoPage({ params }: { params: Promise<{ id
       .select('id, nombre')
       .eq('activo', true)
       .order('nombre'),
+    supabase
+      .from('alma_service_employees')
+      .select('service_id, employee_id'),
   ]);
 
   if (!data) notFound();
+
+  const empPorServicio: Record<string, string[]> = {};
+  for (const r of svcEmps ?? []) {
+    if (!empPorServicio[r.service_id]) empPorServicio[r.service_id] = [];
+    empPorServicio[r.service_id].push(r.employee_id);
+  }
 
   return (
     <main className="pb-10">
@@ -42,6 +51,7 @@ export default async function EditarTurnoPage({ params }: { params: Promise<{ id
         turnoId={data.id}
         servicios={servicios ?? []}
         empleados={empleados ?? []}
+        empleadosPorServicio={empPorServicio}
         defaults={{
           fecha: data.fecha,
           hora: horaCorta(data.hora),

@@ -21,7 +21,7 @@ export default async function NuevoTurnoPage({
   const dia = d && FECHA.test(d) ? d : hoyISO();
 
   const supabase = await createServerSupabase();
-  const [{ data: pacientes }, { data: tenant }, { data: servicios }, { data: empleados }] =
+  const [{ data: pacientes }, { data: tenant }, { data: servicios }, { data: empleados }, { data: svcEmps }] =
     await Promise.all([
       supabase.from('alma_patients').select('id, nombre').order('nombre'),
       supabase.from('alma_tenants').select('settings').maybeSingle(),
@@ -35,7 +35,17 @@ export default async function NuevoTurnoPage({
         .select('id, nombre')
         .eq('activo', true)
         .order('nombre'),
+      supabase
+        .from('alma_service_employees')
+        .select('service_id, employee_id'),
     ]);
+
+  // Armar mapa service_id → employee_ids
+  const empPorServicio: Record<string, string[]> = {};
+  for (const r of svcEmps ?? []) {
+    if (!empPorServicio[r.service_id]) empPorServicio[r.service_id] = [];
+    empPorServicio[r.service_id].push(r.employee_id);
+  }
 
   const s = (tenant?.settings ?? {}) as Settings;
   const duracion = s.duracion_default ?? 45;
@@ -54,6 +64,7 @@ export default async function NuevoTurnoPage({
         pacientes={pacientes ?? []}
         servicios={servicios ?? []}
         empleados={empleados ?? []}
+        empleadosPorServicio={empPorServicio}
         horariosIniciales={horariosIniciales}
         defaults={{
           fecha: dia,

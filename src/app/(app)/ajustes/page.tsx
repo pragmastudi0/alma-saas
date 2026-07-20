@@ -15,6 +15,7 @@ import {
   guardarEmpleado,
   toggleServicio,
   toggleEmpleado,
+  toggleEmpleadoServicio,
 } from './actions';
 
 type Settings = {
@@ -39,7 +40,7 @@ export default async function AjustesPage({
 }) {
   const { mp } = await searchParams;
   const supabase = await createServerSupabase();
-  const [{ data: tenant }, { data: dispo }, { data: cuentaMp }, { data: servicios }, { data: empleados }] =
+  const [{ data: tenant }, { data: dispo }, { data: cuentaMp }, { data: servicios }, { data: empleados }, { data: svcEmps }] =
     await Promise.all([
       supabase.from('alma_tenants').select('nombre, profesion, settings, slug').maybeSingle(),
       supabase
@@ -55,7 +56,16 @@ export default async function AjustesPage({
         .from('alma_employees')
         .select('id, nombre, color, activo')
         .order('nombre'),
+      supabase
+        .from('alma_service_employees')
+        .select('service_id, employee_id'),
     ]);
+
+  const empPorServicio: Record<string, string[]> = {};
+  for (const r of svcEmps ?? []) {
+    if (!empPorServicio[r.service_id]) empPorServicio[r.service_id] = [];
+    empPorServicio[r.service_id].push(r.employee_id);
+  }
 
   const s = (tenant?.settings ?? {}) as Settings;
   const aviso = mp ? MENSAJES_MP[mp] : undefined;
@@ -125,8 +135,11 @@ export default async function AjustesPage({
         </p>
         <ServiciosList
           servicios={servicios ?? []}
+          empleados={empleados ?? []}
+          empleadosPorServicio={empPorServicio}
           onGuardar={guardarServicio}
           onToggle={toggleServicio}
+          onToggleEmpleado={toggleEmpleadoServicio}
         />
       </section>
 

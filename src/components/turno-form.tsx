@@ -92,6 +92,7 @@ export function TurnoForm({
   horariosIniciales,
   servicios,
   empleados,
+  empleadosPorServicio,
 }: {
   action: (prev: AgendaState, formData: FormData) => Promise<AgendaState>;
   submitLabel: string;
@@ -101,6 +102,7 @@ export function TurnoForm({
   horariosIniciales?: HorariosDia;
   servicios?: Servicio[];
   empleados?: Empleado[];
+  empleadosPorServicio?: Record<string, string[]>;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const [nuevo, setNuevo] = useState(pacientes?.length === 0);
@@ -112,14 +114,21 @@ export function TurnoForm({
   const [duracion, setDuracion] = useState(String(defaults.duracion_min));
   const [precio, setPrecio] = useState(String(defaults.precio));
   const [senaMonto, setSenaMonto] = useState(String(defaults.sena_monto));
+  const [serviceId, setServiceId] = useState(defaults.service_id ?? '');
   const [horarios, setHorarios] = useState<HorariosDia>(
     horariosIniciales ?? { slots: [], ocupados: [], atiende: false },
   );
   const [cargando, startCarga] = useTransition();
   const primerRender = useRef(true);
 
-  const handleServiceChange = (serviceId: string) => {
-    const s = servicios?.find((sv) => sv.id === serviceId);
+  // Filtrar empleados según el servicio seleccionado
+  const empleadosFiltrados = serviceId && empleadosPorServicio?.[serviceId]
+    ? empleados?.filter((e) => empleadosPorServicio[serviceId].includes(e.id)) ?? []
+    : empleados ?? [];
+
+  const handleServiceChange = (newServiceId: string) => {
+    setServiceId(newServiceId);
+    const s = servicios?.find((sv) => sv.id === newServiceId);
     if (s) {
       setPrecio(String(Number(s.precio)));
       setSenaMonto(String(Number(s.sena_monto)));
@@ -168,7 +177,7 @@ export function TurnoForm({
           <span className={labelCls}>Empleado</span>
           <select name="employee_id" defaultValue={defaults.employee_id ?? ''} className={inputCls}>
             <option value="">Sin asignar</option>
-            {empleados.map((e) => (
+            {empleadosFiltrados.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.nombre}
               </option>
