@@ -1,12 +1,21 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 import { AjustesForm } from '@/components/ajustes-form';
 import { DisponibilidadForm } from '@/components/disponibilidad-form';
+import { ServiciosList } from '@/components/servicios-list';
+import { EmpleadosList } from '@/components/empleados-list';
 import { LinkPublico } from '@/components/link-publico';
 import { MpConexion } from '@/components/mp-conexion';
 import type { DisponibilidadDia } from '@/lib/disponibilidad';
 import { siteUrl } from '@/lib/mp';
 import { slugificar } from '@/lib/slug';
-import { guardarAjustes, guardarDisponibilidad } from './actions';
+import {
+  guardarAjustes,
+  guardarDisponibilidad,
+  guardarServicio,
+  guardarEmpleado,
+  toggleServicio,
+  toggleEmpleado,
+} from './actions';
 
 type Settings = {
   precio_default?: number;
@@ -30,14 +39,23 @@ export default async function AjustesPage({
 }) {
   const { mp } = await searchParams;
   const supabase = await createServerSupabase();
-  const [{ data: tenant }, { data: dispo }, { data: cuentaMp }] = await Promise.all([
-    supabase.from('alma_tenants').select('nombre, profesion, settings, slug').maybeSingle(),
-    supabase
-      .from('alma_availability')
-      .select('dia_semana, hora_desde, hora_hasta')
-      .order('dia_semana'),
-    supabase.from('alma_mp_accounts').select('collector_id, connected_at').maybeSingle(),
-  ]);
+  const [{ data: tenant }, { data: dispo }, { data: cuentaMp }, { data: servicios }, { data: empleados }] =
+    await Promise.all([
+      supabase.from('alma_tenants').select('nombre, profesion, settings, slug').maybeSingle(),
+      supabase
+        .from('alma_availability')
+        .select('dia_semana, hora_desde, hora_hasta')
+        .order('dia_semana'),
+      supabase.from('alma_mp_accounts').select('collector_id, connected_at').maybeSingle(),
+      supabase
+        .from('alma_services')
+        .select('id, nombre, descripcion, precio, duracion_min, sena_monto, activo')
+        .order('nombre'),
+      supabase
+        .from('alma_employees')
+        .select('id, nombre, color, activo')
+        .order('nombre'),
+    ]);
 
   const s = (tenant?.settings ?? {}) as Settings;
   const aviso = mp ? MENSAJES_MP[mp] : undefined;
@@ -98,6 +116,31 @@ export default async function AjustesPage({
           <LinkPublico url={`${siteUrl()}/t/${tenant.slug}`} />
         </section>
       )}
+
+      <section className="mt-8 border-t border-[var(--alma-border)] pt-6">
+        <h2 className="mb-1 text-[17px] font-semibold">Servicios</h2>
+        <p className="mb-4 text-sm text-[var(--alma-text-muted)]">
+          Si ofrecés distintos tipos de consulta o tratamiento, cargalos acá. Al crear un turno,
+          elegís el servicio y se completa solo el precio, la seña y la duración.
+        </p>
+        <ServiciosList
+          servicios={servicios ?? []}
+          onGuardar={guardarServicio}
+          onToggle={toggleServicio}
+        />
+      </section>
+
+      <section className="mt-8 border-t border-[var(--alma-border)] pt-6">
+        <h2 className="mb-1 text-[17px] font-semibold">Empleados</h2>
+        <p className="mb-4 text-sm text-[var(--alma-text-muted)]">
+          Si trabajás con más personas, cargalas acá para asignarles turnos.
+        </p>
+        <EmpleadosList
+          empleados={empleados ?? []}
+          onGuardar={guardarEmpleado}
+          onToggle={toggleEmpleado}
+        />
+      </section>
 
       <section className="mt-8 border-t border-[var(--alma-border)] pt-6">
         <h2 className="mb-1 text-[17px] font-semibold">Tus horarios</h2>

@@ -76,6 +76,134 @@ export async function guardarAjustes(
   return { info: 'Guardado.' };
 }
 
+// ─── Servicios ──────────────────────────────────────────
+
+const servicioSchema = z.object({
+  id: z.string().uuid().optional(),
+  nombre: z.string().trim().min(1, 'Ponele un nombre al servicio.').max(80),
+  descripcion: z.string().trim().max(200).default(''),
+  precio: z.coerce.number().min(0, 'El precio no puede ser negativo.'),
+  duracion_min: z.coerce.number().int().positive('La duración tiene que ser mayor a cero.'),
+  sena_monto: z.coerce.number().min(0, 'La seña no puede ser negativa.').default(0),
+});
+
+export async function guardarServicio(
+  _prev: AjustesState,
+  formData: FormData,
+): Promise<AjustesState> {
+  const ctx = await getSessionContext();
+  if (!ctx) return { error: 'Tu sesión expiró. Volvé a entrar.' };
+
+  const parsed = servicioSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const v = parsed.data;
+
+  const supabase = await createServerSupabase();
+
+  if (v.id) {
+    const { error } = await supabase
+      .from('alma_services')
+      .update({
+        nombre: v.nombre,
+        descripcion: v.descripcion,
+        precio: v.precio,
+        duracion_min: v.duracion_min,
+        sena_monto: v.sena_monto,
+      })
+      .eq('id', v.id)
+      .eq('tenant_id', ctx.tenantId);
+    if (error) return { error: 'No pudimos guardar el servicio.' };
+  } else {
+    const { error } = await supabase.from('alma_services').insert({
+      tenant_id: ctx.tenantId,
+      nombre: v.nombre,
+      descripcion: v.descripcion,
+      precio: v.precio,
+      duracion_min: v.duracion_min,
+      sena_monto: v.sena_monto,
+    });
+    if (error) return { error: 'No pudimos crear el servicio.' };
+  }
+
+  revalidatePath('/ajustes');
+  return { info: 'Servicio guardado.' };
+}
+
+export async function toggleServicio(formData: FormData): Promise<void> {
+  const ctx = await getSessionContext();
+  if (!ctx) return;
+
+  const id = formData.get('id');
+  const activo = formData.get('activo');
+  if (typeof id !== 'string') return;
+
+  const supabase = await createServerSupabase();
+  await supabase
+    .from('alma_services')
+    .update({ activo: activo === 'true' })
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenantId);
+  revalidatePath('/ajustes');
+}
+
+// ─── Empleados ──────────────────────────────────────────
+
+const empleadoSchema = z.object({
+  id: z.string().uuid().optional(),
+  nombre: z.string().trim().min(1, 'Ponele un nombre al empleado.').max(80),
+  color: z.string().trim().default('#6366f1'),
+});
+
+export async function guardarEmpleado(
+  _prev: AjustesState,
+  formData: FormData,
+): Promise<AjustesState> {
+  const ctx = await getSessionContext();
+  if (!ctx) return { error: 'Tu sesión expiró. Volvé a entrar.' };
+
+  const parsed = empleadoSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const v = parsed.data;
+
+  const supabase = await createServerSupabase();
+
+  if (v.id) {
+    const { error } = await supabase
+      .from('alma_employees')
+      .update({ nombre: v.nombre, color: v.color })
+      .eq('id', v.id)
+      .eq('tenant_id', ctx.tenantId);
+    if (error) return { error: 'No pudimos guardar el empleado.' };
+  } else {
+    const { error } = await supabase.from('alma_employees').insert({
+      tenant_id: ctx.tenantId,
+      nombre: v.nombre,
+      color: v.color,
+    });
+    if (error) return { error: 'No pudimos crear el empleado.' };
+  }
+
+  revalidatePath('/ajustes');
+  return { info: 'Empleado guardado.' };
+}
+
+export async function toggleEmpleado(formData: FormData): Promise<void> {
+  const ctx = await getSessionContext();
+  if (!ctx) return;
+
+  const id = formData.get('id');
+  const activo = formData.get('activo');
+  if (typeof id !== 'string') return;
+
+  const supabase = await createServerSupabase();
+  await supabase
+    .from('alma_employees')
+    .update({ activo: activo === 'true' })
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenantId);
+  revalidatePath('/ajustes');
+}
+
 /** Desconecta la cuenta de Mercado Pago del tenant (borra sus credenciales). */
 export async function desconectarMp(): Promise<void> {
   const ctx = await getSessionContext();

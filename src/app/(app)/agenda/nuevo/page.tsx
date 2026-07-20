@@ -21,10 +21,21 @@ export default async function NuevoTurnoPage({
   const dia = d && FECHA.test(d) ? d : hoyISO();
 
   const supabase = await createServerSupabase();
-  const [{ data: pacientes }, { data: tenant }] = await Promise.all([
-    supabase.from('alma_patients').select('id, nombre').order('nombre'),
-    supabase.from('alma_tenants').select('settings').maybeSingle(),
-  ]);
+  const [{ data: pacientes }, { data: tenant }, { data: servicios }, { data: empleados }] =
+    await Promise.all([
+      supabase.from('alma_patients').select('id, nombre').order('nombre'),
+      supabase.from('alma_tenants').select('settings').maybeSingle(),
+      supabase
+        .from('alma_services')
+        .select('id, nombre, precio, duracion_min, sena_monto')
+        .eq('activo', true)
+        .order('nombre'),
+      supabase
+        .from('alma_employees')
+        .select('id, nombre')
+        .eq('activo', true)
+        .order('nombre'),
+    ]);
 
   const s = (tenant?.settings ?? {}) as Settings;
   const duracion = s.duracion_default ?? 45;
@@ -41,6 +52,8 @@ export default async function NuevoTurnoPage({
         action={crearTurno}
         submitLabel="Guardar turno"
         pacientes={pacientes ?? []}
+        servicios={servicios ?? []}
+        empleados={empleados ?? []}
         horariosIniciales={horariosIniciales}
         defaults={{
           fecha: dia,
