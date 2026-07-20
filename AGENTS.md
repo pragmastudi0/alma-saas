@@ -27,4 +27,6 @@ SaaS mobile-first: la secretaria virtual del profesional independiente (turnos, 
 
 - F0–F6 (Fundaciones, Agenda, Pacientes, Seña MP, WhatsApp, Caja+Hoy, Pulido): hechas y mergeadas en `main`.
 - F3b MP multi-cuenta: cada profesional conecta SU cuenta de Mercado Pago por OAuth (`docs/mercado-pago.md`); tokens cifrados en `alma_mp_accounts` (solo service role); fallback por alias con confirmación manual.
+- F8 Notificaciones: campanita de turnos nuevos del portal, próximos en Hoy, por cobrar en Caja, agenda mensual en lista.
+- F9 Servicios y empleados: `alma_services`, `alma_employees`, service_id/employee_id en turnos y disponibilidad. Configuración desde Ajustes. Portal público con selector de servicio.
 - Pendientes conocidos: expiración de la seña con liberación del turno; ingreso automático en caja al completar el turno (precio − seña).

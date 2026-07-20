@@ -23,6 +23,8 @@ const turnoBase = z.object({
   duracion_min: z.coerce.number().int().positive('La duración tiene que ser mayor a cero.'),
   precio: z.coerce.number().min(0, 'El precio no puede ser negativo.').default(0),
   sena_monto: z.coerce.number().min(0, 'La seña no puede ser negativa.').default(0),
+  service_id: z.string().uuid().optional().or(z.literal('')),
+  employee_id: z.string().uuid().optional().or(z.literal('')),
 });
 
 const crearTurnoSchema = turnoBase
@@ -107,6 +109,8 @@ export async function crearTurno(_prev: AgendaState, formData: FormData): Promis
     sena_monto: v.sena_monto,
     sena_pagada: false,
     estado,
+    service_id: v.service_id || null,
+    employee_id: v.employee_id || null,
   });
   if (error?.code === '23P01') {
     return { error: 'Ese horario se superpone con otro turno. Probá otro.' };
@@ -139,6 +143,8 @@ export async function editarTurno(_prev: AgendaState, formData: FormData): Promi
       duracion_min: v.duracion_min,
       precio: v.precio,
       sena_monto: v.sena_monto,
+      service_id: v.service_id || null,
+      employee_id: v.employee_id || null,
       // El link de seña vigente puede quedar desactualizado (monto/fecha): se regenera.
       mp_preference_id: null,
       mp_init_point: null,

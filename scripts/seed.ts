@@ -102,6 +102,28 @@ async function main() {
   const valentina = pacientes.find((p) => p.nombre === 'Valentina Ríos')!;
   const marcos = pacientes.find((p) => p.nombre === 'Marcos Peralta')!;
 
+  // 3b. servicios demo
+  const { data: servicios, error: svcErr } = await admin
+    .from('alma_services')
+    .insert([
+      { tenant_id: tenantId, nombre: 'Consulta', precio: 15000, duracion_min: 45, sena_monto: 5000 },
+      { tenant_id: tenantId, nombre: 'Control', precio: 10000, duracion_min: 30, sena_monto: 3000 },
+      { tenant_id: tenantId, nombre: 'Plan alimentario', precio: 25000, duracion_min: 60, sena_monto: 8000 },
+    ])
+    .select('id, nombre');
+  if (svcErr) throw svcErr;
+
+  // 3c. empleados demo
+  const { error: empErr } = await admin
+    .from('alma_employees')
+    .insert([
+      { tenant_id: tenantId, nombre: 'Sofi', color: '#6366f1' },
+      { tenant_id: tenantId, nombre: 'Luis', color: '#10b981' },
+    ]);
+  if (empErr) throw empErr;
+
+  const consulta = servicios!.find((s) => s.nombre === 'Consulta')!;
+
   const jueves = proximoJueves();
   const { error: apptErr } = await admin.from('alma_appointments').insert([
     {
@@ -114,6 +136,7 @@ async function main() {
       sena_monto: 5000,
       sena_pagada: true,
       estado: 'confirmado',
+      service_id: consulta.id,
     },
     {
       tenant_id: tenantId,
@@ -125,6 +148,7 @@ async function main() {
       sena_monto: 5000,
       sena_pagada: false,
       estado: 'pendiente_sena',
+      service_id: consulta.id,
     },
   ]);
   if (apptErr) throw apptErr;

@@ -27,7 +27,7 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
     supabase
       .from('alma_appointments')
       .select(
-        'id, fecha, hora, duracion_min, precio, sena_monto, sena_pagada, estado, mp_init_point, alma_patients(nombre, apellido, telefono)',
+        'id, fecha, hora, duracion_min, precio, sena_monto, sena_pagada, estado, mp_init_point, alma_patients(nombre, apellido, telefono), alma_services(nombre), alma_employees(nombre)',
       )
       .eq('id', id)
       .maybeSingle(),
@@ -93,6 +93,14 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
               'Sin seña'
             )}
           </Dato>
+          {(() => {
+            const svc = data.alma_services as { nombre?: string } | null;
+            return svc?.nombre ? <Dato label="Servicio">{svc.nombre}</Dato> : null;
+          })()}
+          {(() => {
+            const emp = data.alma_employees as { nombre?: string } | null;
+            return emp?.nombre ? <Dato label="Empleado">{emp.nombre}</Dato> : null;
+          })()}
         </dl>
       </section>
 

@@ -7,6 +7,9 @@ import type { AgendaState, HorariosDia, TurnoOcupado } from '@/lib/turno';
 
 type Paciente = { id: string; nombre: string };
 
+type Servicio = { id: string; nombre: string; precio: number | string; duracion_min: number; sena_monto: number | string };
+type Empleado = { id: string; nombre: string };
+
 type Defaults = {
   fecha: string;
   hora: string;
@@ -14,6 +17,8 @@ type Defaults = {
   precio: number;
   sena_monto: number;
   patient_id?: string;
+  service_id?: string;
+  employee_id?: string;
 };
 
 const slotCls = (activo: boolean) =>
@@ -85,6 +90,8 @@ export function TurnoForm({
   pacientes,
   turnoId,
   horariosIniciales,
+  servicios,
+  empleados,
 }: {
   action: (prev: AgendaState, formData: FormData) => Promise<AgendaState>;
   submitLabel: string;
@@ -92,6 +99,8 @@ export function TurnoForm({
   pacientes?: Paciente[];
   turnoId?: string;
   horariosIniciales?: HorariosDia;
+  servicios?: Servicio[];
+  empleados?: Empleado[];
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const [nuevo, setNuevo] = useState(pacientes?.length === 0);
@@ -101,11 +110,22 @@ export function TurnoForm({
   const [fecha, setFecha] = useState(defaults.fecha);
   const [hora, setHora] = useState(defaults.hora);
   const [duracion, setDuracion] = useState(String(defaults.duracion_min));
+  const [precio, setPrecio] = useState(String(defaults.precio));
+  const [senaMonto, setSenaMonto] = useState(String(defaults.sena_monto));
   const [horarios, setHorarios] = useState<HorariosDia>(
     horariosIniciales ?? { slots: [], ocupados: [], atiende: false },
   );
   const [cargando, startCarga] = useTransition();
   const primerRender = useRef(true);
+
+  const handleServiceChange = (serviceId: string) => {
+    const s = servicios?.find((sv) => sv.id === serviceId);
+    if (s) {
+      setPrecio(String(Number(s.precio)));
+      setSenaMonto(String(Number(s.sena_monto)));
+      setDuracion(String(s.duracion_min));
+    }
+  };
 
   useEffect(() => {
     if (!esAlta) return;
@@ -123,6 +143,39 @@ export function TurnoForm({
   return (
     <form action={formAction} className="flex flex-col gap-4 md:max-w-xl">
       {turnoId && <input type="hidden" name="id" value={turnoId} />}
+
+      {servicios && servicios.length > 0 && (
+        <label className="block">
+          <span className={labelCls}>Servicio</span>
+          <select
+            name="service_id"
+            defaultValue={defaults.service_id ?? ''}
+            onChange={(e) => handleServiceChange(e.target.value)}
+            className={inputCls}
+          >
+            <option value="">Sin servicio (valores manuales)</option>
+            {servicios.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nombre} — ${Number(s.precio).toLocaleString('es-AR')} / {s.duracion_min} min
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {empleados && empleados.length > 0 && (
+        <label className="block">
+          <span className={labelCls}>Empleado</span>
+          <select name="employee_id" defaultValue={defaults.employee_id ?? ''} className={inputCls}>
+            <option value="">Sin asignar</option>
+            {empleados.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.nombre}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       {pacientes && (
         <div className="flex flex-col gap-2">
@@ -219,7 +272,8 @@ export function TurnoForm({
             type="number"
             min={0}
             step={500}
-            defaultValue={defaults.precio}
+            value={precio}
+            onChange={(e) => setPrecio(e.target.value)}
             className={inputCls + ' tnum'}
           />
         </label>
@@ -230,7 +284,8 @@ export function TurnoForm({
             type="number"
             min={0}
             step={500}
-            defaultValue={defaults.sena_monto}
+            value={senaMonto}
+            onChange={(e) => setSenaMonto(e.target.value)}
             className={inputCls + ' tnum'}
           />
         </label>

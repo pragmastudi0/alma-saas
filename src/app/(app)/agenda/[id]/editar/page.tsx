@@ -9,11 +9,23 @@ export default async function EditarTurnoPage({ params }: { params: Promise<{ id
   const { id } = await params;
 
   const supabase = await createServerSupabase();
-  const { data } = await supabase
-    .from('alma_appointments')
-    .select('id, fecha, hora, duracion_min, precio, sena_monto')
-    .eq('id', id)
-    .maybeSingle();
+  const [{ data }, { data: servicios }, { data: empleados }] = await Promise.all([
+    supabase
+      .from('alma_appointments')
+      .select('id, fecha, hora, duracion_min, precio, sena_monto, service_id, employee_id')
+      .eq('id', id)
+      .maybeSingle(),
+    supabase
+      .from('alma_services')
+      .select('id, nombre, precio, duracion_min, sena_monto')
+      .eq('activo', true)
+      .order('nombre'),
+    supabase
+      .from('alma_employees')
+      .select('id, nombre')
+      .eq('activo', true)
+      .order('nombre'),
+  ]);
 
   if (!data) notFound();
 
@@ -28,12 +40,16 @@ export default async function EditarTurnoPage({ params }: { params: Promise<{ id
         action={editarTurno}
         submitLabel="Guardar cambios"
         turnoId={data.id}
+        servicios={servicios ?? []}
+        empleados={empleados ?? []}
         defaults={{
           fecha: data.fecha,
           hora: horaCorta(data.hora),
           duracion_min: data.duracion_min,
           precio: Number(data.precio),
           sena_monto: Number(data.sena_monto),
+          service_id: data.service_id ?? undefined,
+          employee_id: data.employee_id ?? undefined,
         }}
       />
     </main>

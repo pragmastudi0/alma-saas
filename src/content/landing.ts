@@ -11,6 +11,7 @@ import {
   IconoCaja,
   IconoLink,
   IconoPacientes,
+  IconoAjustes,
 } from '@/components/icons';
 
 type IconoComponent = ComponentType<{ className?: string }>;
@@ -61,6 +62,11 @@ export const FEATURES: Feature[] = [
     titulo: 'Ficha de pacientes',
     texto: 'Nombre, contacto y notas de cada persona, siempre a mano.',
   },
+  {
+    Icono: IconoAjustes,
+    titulo: 'Servicios y empleados',
+    texto: 'Configurá los servicios que ofrecés con su precio y duración, y asignále los turnos a cada empleado.',
+  },
 ];
 
 export const PRECIO = {
@@ -69,6 +75,8 @@ export const PRECIO = {
   nota: 'Sin permanencia. Cancelás cuando quieras.',
   incluye: [
     'Turnos y agenda sin límite',
+    'Servicios con precio y duración configurables',
+    'Empleados: turnos para todo tu equipo',
     'Señas por Mercado Pago con tu propia cuenta',
     'Recordatorios por WhatsApp',
     'Portal de reservas online',

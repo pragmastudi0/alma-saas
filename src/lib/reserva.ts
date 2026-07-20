@@ -25,6 +25,14 @@ export type DatosReserva = {
   telefono: string;
   email: string;
   fechaNacimiento: string; // 'YYYY-MM-DD'
+  serviceId?: string;
+};
+
+type ServicioReserva = {
+  id: string;
+  precio: number | string;
+  duracion_min: number;
+  sena_monto: number | string;
 };
 
 export type ResultadoReserva =
@@ -40,7 +48,18 @@ export async function crearReservaPublica(
     return { ok: false, motivo: 'sin_disponibilidad' };
   }
 
-  const duracionMin = datos.settings.duracion_default ?? 45;
+  let servicio: ServicioReserva | null = null;
+  if (datos.serviceId) {
+    const { data: sv } = await admin
+      .from('alma_services')
+      .select('id, precio, duracion_min, sena_monto')
+      .eq('id', datos.serviceId)
+      .eq('tenant_id', datos.tenantId)
+      .maybeSingle();
+    servicio = sv as ServicioReserva | null;
+  }
+
+  const duracionMin = servicio?.duracion_min ?? datos.settings.duracion_default ?? 45;
   const slots = await slotsDelDia(
     admin,
     { id: datos.tenantId, timezone: datos.timezone, duracionMin },
@@ -116,7 +135,8 @@ export async function crearReservaPublica(
     patientId = nuevo.id;
   }
 
-  const senaMonto = datos.settings.sena_default ?? 0;
+  const precioFinal = servicio ? Number(servicio.precio) : (datos.settings.precio_default ?? 0);
+  const senaMonto = servicio ? Number(servicio.sena_monto) : (datos.settings.sena_default ?? 0);
   const estado = senaMonto > 0 ? 'pendiente_sena' : 'confirmado';
 
   const { data: turno, error: insErr } = await admin
@@ -127,10 +147,11 @@ export async function crearReservaPublica(
       fecha: datos.fecha,
       hora: datos.hora,
       duracion_min: duracionMin,
-      precio: datos.settings.precio_default ?? 0,
+      precio: precioFinal,
       sena_monto: senaMonto,
       estado,
       origen: 'portal',
+      service_id: servicio?.id ?? null,
     })
     .select('id')
     .single();
