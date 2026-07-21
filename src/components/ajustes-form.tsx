@@ -10,6 +10,7 @@ type Defaults = {
   precio_default: number;
   sena_default: number;
   duracion_default: number;
+  inactividad_dias: number;
   alias_mp: string;
   slug: string;
 };
@@ -83,6 +84,23 @@ export function AjustesForm({
           </label>
         </div>
       </div>
+
+      <label className="block border-t border-[var(--alma-border)] pt-4">
+        <span className={labelCls}>Pacientes inactivos (días)</span>
+        <input
+          name="inactividad_dias"
+          type="number"
+          min={1}
+          max={365}
+          step={1}
+          required
+          defaultValue={defaults.inactividad_dias}
+          className={inputCls + ' tnum'}
+        />
+        <span className="mt-1.5 block text-xs text-[var(--alma-text-muted)]">
+          En Reportes te mostramos qué pacientes llevan más de estos días sin venir.
+        </span>
+      </label>
 
       <label className="block border-t border-[var(--alma-border)] pt-4">
         <span className={labelCls}>Alias para transferencias</span>

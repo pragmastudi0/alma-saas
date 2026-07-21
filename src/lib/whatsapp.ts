@@ -33,6 +33,11 @@ export function mensajeRecordatorio(nombre: string, fecha: string, hora: string)
   return `Hola ${nombre}! Te recuerdo tu turno del ${fecha} a las ${hora}. ¡Nos vemos!`;
 }
 
+/** Mensaje para retomar contacto con un paciente que hace tiempo no viene. */
+export function mensajeReencuentro(nombre: string): string {
+  return `Hola ${nombre}! ¿Cómo andás? Hace un tiempo que no nos vemos. Si querés, coordinamos un turno. ¡Saludos!`;
+}
+
 export function mensajeSena(nombre: string, fecha: string, hora: string, link: string): string {
   return `Hola ${nombre}! Para reservar tu turno del ${fecha} a las ${hora}, dejá la seña acá: ${link}`;
 }
