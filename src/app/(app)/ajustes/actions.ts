@@ -24,6 +24,11 @@ const ajustesSchema = z.object({
     .min(1, 'El período de inactividad tiene que ser de al menos 1 día.')
     .max(365, 'El período de inactividad puede ser de hasta un año (365 días).')
     .default(INACTIVIDAD_DIAS_DEFAULT),
+  plantilla_cancelacion: z
+    .string()
+    .trim()
+    .max(300, 'La plantilla puede tener hasta 300 caracteres.')
+    .default(''),
   alias_mp: z.string().trim().max(60).default(''),
   slug: z
     .string()
@@ -65,6 +70,7 @@ export async function guardarAjustes(
     sena_default: v.sena_default,
     duracion_default: v.duracion_default,
     inactividad_dias: v.inactividad_dias,
+    plantilla_cancelacion: v.plantilla_cancelacion || null,
     alias_mp: v.alias_mp || null,
   };
 

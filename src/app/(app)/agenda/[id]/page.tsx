@@ -43,8 +43,13 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
   const estado = data.estado as Estado;
   const sena = Number(data.sena_monto);
 
+  const settings = tenant?.settings as {
+    alias_mp?: string | null;
+    plantilla_cancelacion?: string | null;
+  } | null;
+
   // Cómo cobra la seña este profesional: MP conectado > alias > nada.
-  const alias = ((tenant?.settings as { alias_mp?: string | null } | null)?.alias_mp ?? '').trim();
+  const alias = (settings?.alias_mp ?? '').trim();
   const cobro: CobroSena = cuentaMp
     ? { modo: 'mp', initPoint: data.mp_init_point ?? null }
     : alias
@@ -109,6 +114,7 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
           id={data.id}
           estado={estado}
           cobro={cobro}
+          plantillaCancel={settings?.plantilla_cancelacion ?? ''}
           wa={{
             telefono: pac?.telefono ?? '',
             nombre: nombreCompleto,

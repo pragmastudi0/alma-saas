@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useRef } from 'react';
 import {
   cancelarTurno,
   completarTurno,
@@ -9,7 +9,7 @@ import {
 } from '@/app/(app)/agenda/actions';
 import { SenaLinkBoton, type CobroSena, type WaCtx } from '@/components/sena-link-boton';
 import { WhatsAppLink } from '@/components/whatsapp-link';
-import { mensajeRecordatorio, waLink } from '@/lib/whatsapp';
+import { mensajeCancelacion, mensajeRecordatorio, waLink } from '@/lib/whatsapp';
 import type { AgendaState, Estado } from '@/lib/turno';
 
 type Action = (prev: AgendaState, formData: FormData) => Promise<AgendaState>;
@@ -52,16 +52,73 @@ function Accion({
   );
 }
 
+/**
+ * Cancela el turno y abre WhatsApp con el aviso en el mismo toque: el link
+ * wa.me se abre con el gesto del usuario (sin bloqueo de popups) mientras el
+ * form dispara la cancelación real. Si la transición falla, se muestra el error.
+ */
+function CancelarAvisando({ id, href }: { id: string; href: string }) {
+  const [state, formAction, pending] = useActionState(cancelarTurno, {});
+  const formRef = useRef<HTMLFormElement>(null);
+
+  return (
+    <div>
+      <form ref={formRef} action={formAction}>
+        <input type="hidden" name="id" value={id} />
+      </form>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-disabled={pending}
+        onClick={() => formRef.current?.requestSubmit()}
+        className="flex w-full items-center justify-center rounded-md border border-[var(--alma-border)] px-4 py-3 font-semibold text-[var(--alma-text-muted)] transition-colors duration-micro ease-alma hover:text-[var(--alma-text)]"
+      >
+        {pending ? 'Un momento…' : 'Cancelar y avisar por WhatsApp'}
+      </a>
+      {state.error && (
+        <p role="alert" className="mt-1.5 text-sm text-[var(--error-600)]">
+          {state.error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Cancelar({ id, wa, plantillaCancel }: { id: string; wa: WaCtx; plantillaCancel: string }) {
+  const href = waLink(
+    wa.telefono,
+    mensajeCancelacion(plantillaCancel, { nombre: wa.nombre, fecha: wa.fecha, hora: wa.hora }),
+  );
+  if (!href) {
+    return (
+      <Accion action={cancelarTurno} id={id} variant="ghost">
+        Cancelar turno
+      </Accion>
+    );
+  }
+  return (
+    <>
+      <CancelarAvisando id={id} href={href} />
+      <Accion action={cancelarTurno} id={id} variant="ghost">
+        Cancelar sin avisar
+      </Accion>
+    </>
+  );
+}
+
 export function EstadoAcciones({
   id,
   estado,
   wa,
   cobro,
+  plantillaCancel = '',
 }: {
   id: string;
   estado: Estado;
   wa: WaCtx;
   cobro: CobroSena;
+  plantillaCancel?: string;
 }) {
   if (estado === 'pendiente_sena') {
     return (
@@ -70,9 +127,7 @@ export function EstadoAcciones({
         <Accion action={confirmarSena} id={id} variant="primary">
           Marcar seña cobrada
         </Accion>
-        <Accion action={cancelarTurno} id={id} variant="ghost">
-          Cancelar turno
-        </Accion>
+        <Cancelar id={id} wa={wa} plantillaCancel={plantillaCancel} />
       </div>
     );
   }
@@ -89,9 +144,7 @@ export function EstadoAcciones({
         <Accion action={marcarAusente} id={id} variant="ghost">
           No vino (ausente)
         </Accion>
-        <Accion action={cancelarTurno} id={id} variant="ghost">
-          Cancelar turno
-        </Accion>
+        <Cancelar id={id} wa={wa} plantillaCancel={plantillaCancel} />
       </div>
     );
   }

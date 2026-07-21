@@ -7,6 +7,7 @@ import { LinkPublico } from '@/components/link-publico';
 import { MpConexion } from '@/components/mp-conexion';
 import type { DisponibilidadDia } from '@/lib/disponibilidad';
 import { INACTIVIDAD_DIAS_DEFAULT } from '@/lib/inactivos';
+import { PLANTILLA_CANCELACION_DEFAULT } from '@/lib/whatsapp';
 import { siteUrl } from '@/lib/mp';
 import { slugificar } from '@/lib/slug';
 import {
@@ -24,6 +25,7 @@ type Settings = {
   sena_default?: number;
   duracion_default?: number;
   inactividad_dias?: number;
+  plantilla_cancelacion?: string | null;
   alias_mp?: string | null;
 };
 
@@ -114,6 +116,7 @@ export default async function AjustesPage({
           sena_default: s.sena_default ?? 0,
           duracion_default: s.duracion_default ?? 45,
           inactividad_dias: s.inactividad_dias ?? INACTIVIDAD_DIAS_DEFAULT,
+          plantilla_cancelacion: s.plantilla_cancelacion ?? PLANTILLA_CANCELACION_DEFAULT,
           alias_mp: s.alias_mp ?? '',
           slug: tenant?.slug ?? slugificar(tenant?.nombre ?? ''),
         }}

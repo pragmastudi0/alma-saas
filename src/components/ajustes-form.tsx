@@ -11,6 +11,7 @@ type Defaults = {
   sena_default: number;
   duracion_default: number;
   inactividad_dias: number;
+  plantilla_cancelacion: string;
   alias_mp: string;
   slug: string;
 };
@@ -99,6 +100,21 @@ export function AjustesForm({
         />
         <span className="mt-1.5 block text-xs text-[var(--alma-text-muted)]">
           En Reportes te mostramos qué pacientes llevan más de estos días sin venir.
+        </span>
+      </label>
+
+      <label className="block border-t border-[var(--alma-border)] pt-4">
+        <span className={labelCls}>Mensaje de cancelación</span>
+        <textarea
+          name="plantilla_cancelacion"
+          rows={3}
+          maxLength={300}
+          defaultValue={defaults.plantilla_cancelacion}
+          className={inputCls}
+        />
+        <span className="mt-1.5 block text-xs text-[var(--alma-text-muted)]">
+          Es el mensaje que se abre en WhatsApp al cancelar un turno. Escribí{' '}
+          {'{nombre}'}, {'{fecha}'} y {'{hora}'} donde quieras que se completen solos.
         </span>
       </label>
 

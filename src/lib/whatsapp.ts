@@ -33,6 +33,24 @@ export function mensajeRecordatorio(nombre: string, fecha: string, hora: string)
   return `Hola ${nombre}! Te recuerdo tu turno del ${fecha} a las ${hora}. ¡Nos vemos!`;
 }
 
+export const PLANTILLA_CANCELACION_DEFAULT =
+  'Hola {nombre}! Te escribo porque tengo que cancelar tu turno del {fecha} a las {hora}. Contestame por acá y lo reprogramamos. ¡Perdón por las molestias!';
+
+/**
+ * Rinde la plantilla de cancelación reemplazando {nombre}, {fecha} y {hora}.
+ * Si la plantilla está vacía, usa la de fábrica.
+ */
+export function mensajeCancelacion(
+  plantilla: string,
+  datos: { nombre: string; fecha: string; hora: string },
+): string {
+  const base = plantilla.trim() || PLANTILLA_CANCELACION_DEFAULT;
+  return base
+    .replaceAll('{nombre}', datos.nombre)
+    .replaceAll('{fecha}', datos.fecha)
+    .replaceAll('{hora}', datos.hora);
+}
+
 /** Mensaje para retomar contacto con un paciente que hace tiempo no viene. */
 export function mensajeReencuentro(nombre: string): string {
   return `Hola ${nombre}! ¿Cómo andás? Hace un tiempo que no nos vemos. Si querés, coordinamos un turno. ¡Saludos!`;
