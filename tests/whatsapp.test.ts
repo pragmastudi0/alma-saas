@@ -2,12 +2,26 @@
 import { describe, expect, it } from 'vitest';
 import { PLANTILLA_CANCELACION_DEFAULT, mensajeCancelacion } from '../src/lib/whatsapp';
 
-const DATOS = { nombre: 'Valentina', fecha: 'jueves 16 de julio', hora: '10:00' };
+const DATOS = {
+  nombre: 'Valentina',
+  apellido: 'Ríos',
+  fecha: 'jueves 16 de julio',
+  hora: '10:00',
+};
 
 describe('mensajeCancelacion', () => {
-  it('reemplaza {nombre}, {fecha} y {hora}', () => {
-    const msg = mensajeCancelacion('Hola {nombre}, cancelo el {fecha} a las {hora}.', DATOS);
-    expect(msg).toBe('Hola Valentina, cancelo el jueves 16 de julio a las 10:00.');
+  it('reemplaza {nombre}, {apellido}, {fecha} y {hora}', () => {
+    const msg = mensajeCancelacion(
+      'Hola {nombre} {apellido}, cancelo el {fecha} a las {hora}.',
+      DATOS,
+    );
+    expect(msg).toBe('Hola Valentina Ríos, cancelo el jueves 16 de julio a las 10:00.');
+  });
+
+  it('{nombre} es solo el nombre de pila, sin apellido', () => {
+    const msg = mensajeCancelacion('Hola {nombre}!', DATOS);
+    expect(msg).toBe('Hola Valentina!');
+    expect(msg).not.toContain('Ríos');
   });
 
   it('con plantilla vacía o en blanco usa la de fábrica', () => {

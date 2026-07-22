@@ -36,6 +36,8 @@ const crearTurnoSchema = turnoBase
     ),
     nuevo_nombre: z.string().trim().max(80).optional(),
     nuevo_telefono: z.string().trim().max(40).optional(),
+    // Al reprogramar: turno cancelado/ausente que se marca como reprogramado.
+    origen: z.preprocess((v) => (v === '' ? undefined : v), z.string().uuid().optional()),
   })
   .superRefine((v, ctx) => {
     if (!v.patient_id && (!v.nuevo_nombre || v.nuevo_nombre.length < 2)) {
@@ -99,24 +101,40 @@ export async function crearTurno(_prev: AgendaState, formData: FormData): Promis
   // Con seña nace pendiente_sena; sin seña, confirmado.
   const estado: Estado = v.sena_monto > 0 ? 'pendiente_sena' : 'confirmado';
 
-  const { error } = await supabase.from('alma_appointments').insert({
-    tenant_id: ctx.tenantId,
-    patient_id: patientId,
-    fecha: v.fecha,
-    hora: v.hora,
-    duracion_min: v.duracion_min,
-    precio: v.precio,
-    sena_monto: v.sena_monto,
-    sena_pagada: false,
-    estado,
-    service_id: v.service_id || null,
-    employee_id: v.employee_id || null,
-  });
+  const { data: nuevo, error } = await supabase
+    .from('alma_appointments')
+    .insert({
+      tenant_id: ctx.tenantId,
+      patient_id: patientId,
+      fecha: v.fecha,
+      hora: v.hora,
+      duracion_min: v.duracion_min,
+      precio: v.precio,
+      sena_monto: v.sena_monto,
+      sena_pagada: false,
+      estado,
+      service_id: v.service_id || null,
+      employee_id: v.employee_id || null,
+    })
+    .select('id')
+    .single();
   if (error?.code === '23P01') {
     return { error: 'Ese horario se superpone con otro turno. Probá otro.' };
   }
-  if (error) {
+  if (error || !nuevo) {
     return { error: 'No pudimos guardar el turno. Probá de nuevo.' };
+  }
+
+  // Reprogramación: dejamos el turno original apuntando al nuevo. La guarda de
+  // estado evita marcar por error un turno que no estaba cancelado/ausente.
+  if (v.origen) {
+    await supabase
+      .from('alma_appointments')
+      .update({ reprogramado_a: nuevo.id })
+      .eq('id', v.origen)
+      .eq('tenant_id', ctx.tenantId)
+      .in('estado', ['cancelado', 'ausente']);
+    revalidatePath('/agenda/[id]', 'page');
   }
 
   revalidatePath('/agenda');

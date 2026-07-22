@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState, useRef } from 'react';
 import {
   cancelarTurno,
@@ -88,7 +89,12 @@ function CancelarAvisando({ id, href }: { id: string; href: string }) {
 function Cancelar({ id, wa, plantillaCancel }: { id: string; wa: WaCtx; plantillaCancel: string }) {
   const href = waLink(
     wa.telefono,
-    mensajeCancelacion(plantillaCancel, { nombre: wa.nombre, fecha: wa.fecha, hora: wa.hora }),
+    mensajeCancelacion(plantillaCancel, {
+      nombre: wa.nombre,
+      apellido: wa.apellido,
+      fecha: wa.fecha,
+      hora: wa.hora,
+    }),
   );
   if (!href) {
     return (
@@ -113,12 +119,14 @@ export function EstadoAcciones({
   wa,
   cobro,
   plantillaCancel = '',
+  reprogramarHref,
 }: {
   id: string;
   estado: Estado;
   wa: WaCtx;
   cobro: CobroSena;
   plantillaCancel?: string;
+  reprogramarHref?: string;
 }) {
   if (estado === 'pendiente_sena') {
     return (
@@ -149,5 +157,17 @@ export function EstadoAcciones({
     );
   }
 
-  return <p className="text-sm text-[var(--alma-text-muted)]">Este turno ya está cerrado.</p>;
+  return (
+    <div className="flex flex-col gap-2.5">
+      {reprogramarHref && (
+        <Link
+          href={reprogramarHref}
+          className="flex w-full items-center justify-center rounded-md bg-[var(--alma-action)] px-4 py-3 font-semibold text-[var(--alma-on-action)] shadow-brand transition-opacity duration-micro ease-alma hover:opacity-90"
+        >
+          Reprogramar turno
+        </Link>
+      )}
+      <p className="text-sm text-[var(--alma-text-muted)]">Este turno ya está cerrado.</p>
+    </div>
+  );
 }
