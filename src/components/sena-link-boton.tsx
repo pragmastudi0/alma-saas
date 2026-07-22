@@ -9,7 +9,9 @@ import type { MpLinkState } from '@/lib/turno';
 
 export type WaCtx = {
   telefono: string;
+  /** Solo el nombre de pila (columna `nombre`), no el nombre completo. */
   nombre: string;
+  apellido: string;
   fecha: string;
   hora: string;
 };

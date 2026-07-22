@@ -42,11 +42,12 @@ export const PLANTILLA_CANCELACION_DEFAULT =
  */
 export function mensajeCancelacion(
   plantilla: string,
-  datos: { nombre: string; fecha: string; hora: string },
+  datos: { nombre: string; apellido: string; fecha: string; hora: string },
 ): string {
   const base = plantilla.trim() || PLANTILLA_CANCELACION_DEFAULT;
   return base
     .replaceAll('{nombre}', datos.nombre)
+    .replaceAll('{apellido}', datos.apellido)
     .replaceAll('{fecha}', datos.fecha)
     .replaceAll('{hora}', datos.hora);
 }

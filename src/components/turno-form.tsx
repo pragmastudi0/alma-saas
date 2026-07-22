@@ -89,6 +89,7 @@ export function TurnoForm({
   defaults,
   pacientes,
   turnoId,
+  origen,
   horariosIniciales,
   servicios,
   empleados,
@@ -99,6 +100,8 @@ export function TurnoForm({
   defaults: Defaults;
   pacientes?: Paciente[];
   turnoId?: string;
+  /** Al reprogramar: id del turno original que se marca como reprogramado. */
+  origen?: string;
   horariosIniciales?: HorariosDia;
   servicios?: Servicio[];
   empleados?: Empleado[];
@@ -152,6 +155,7 @@ export function TurnoForm({
   return (
     <form action={formAction} className="flex flex-col gap-4 md:max-w-xl">
       {turnoId && <input type="hidden" name="id" value={turnoId} />}
+      {origen && <input type="hidden" name="origen" value={origen} />}
 
       {servicios && servicios.length > 0 && (
         <label className="block">

@@ -114,7 +114,8 @@ export function AjustesForm({
         />
         <span className="mt-1.5 block text-xs text-[var(--alma-text-muted)]">
           Es el mensaje que se abre en WhatsApp al cancelar un turno. Escribí{' '}
-          {'{nombre}'}, {'{fecha}'} y {'{hora}'} donde quieras que se completen solos.
+          {'{nombre}'}, {'{apellido}'}, {'{fecha}'} y {'{hora}'} donde quieras que se completen
+          solos.
         </span>
       </label>
 

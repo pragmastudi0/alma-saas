@@ -27,7 +27,7 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
     supabase
       .from('alma_appointments')
       .select(
-        'id, fecha, hora, duracion_min, precio, sena_monto, sena_pagada, estado, mp_init_point, alma_patients(nombre, apellido, telefono), alma_services(nombre), alma_employees(nombre)',
+        'id, fecha, hora, duracion_min, precio, sena_monto, sena_pagada, estado, mp_init_point, patient_id, service_id, employee_id, reprogramado_a, alma_patients(nombre, apellido, telefono), alma_services(nombre), alma_employees(nombre)',
       )
       .eq('id', id)
       .maybeSingle(),
@@ -38,7 +38,11 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
   if (!data) notFound();
 
   const rel = data.alma_patients;
-  const pac = (Array.isArray(rel) ? rel[0] : rel) as { nombre?: string; telefono?: string } | null;
+  const pac = (Array.isArray(rel) ? rel[0] : rel) as {
+    nombre?: string;
+    apellido?: string;
+    telefono?: string;
+  } | null;
   const nombreCompleto = nombrePaciente(rel) || 'Paciente';
   const estado = data.estado as Estado;
   const sena = Number(data.sena_monto);
@@ -55,6 +59,29 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
     : alias
       ? { modo: 'alias', alias, monto: pesos(sena) }
       : { modo: 'ninguno' };
+
+  // Reprogramar: solo para turnos que no se dieron y que todavía no se reprogramaron.
+  const reprogramable = (estado === 'cancelado' || estado === 'ausente') && !data.reprogramado_a;
+  let reprogramarHref: string | undefined;
+  if (reprogramable && data.patient_id) {
+    const params = new URLSearchParams({ p: data.patient_id, origen: data.id });
+    if (data.service_id) params.set('svc', data.service_id);
+    if (data.employee_id) params.set('emp', data.employee_id);
+    if (Number(data.precio) > 0) params.set('precio', String(Number(data.precio)));
+    if (sena > 0) params.set('sena', String(sena));
+    reprogramarHref = `/agenda/nuevo?${params.toString()}`;
+  }
+
+  // Si ya se reprogramó, mostramos a dónde fue.
+  let turnoNuevo: { id: string; fecha: string; hora: string } | null = null;
+  if (data.reprogramado_a) {
+    const { data: destino } = await supabase
+      .from('alma_appointments')
+      .select('id, fecha, hora')
+      .eq('id', data.reprogramado_a)
+      .maybeSingle();
+    turnoNuevo = destino ?? null;
+  }
 
   return (
     <main className="pb-10 md:max-w-2xl">
@@ -115,14 +142,30 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
           estado={estado}
           cobro={cobro}
           plantillaCancel={settings?.plantilla_cancelacion ?? ''}
+          reprogramarHref={reprogramarHref}
           wa={{
             telefono: pac?.telefono ?? '',
-            nombre: nombreCompleto,
+            nombre: pac?.nombre ?? 'Paciente',
+            apellido: pac?.apellido ?? '',
             fecha: etiquetaDia(data.fecha),
             hora: horaCorta(data.hora),
           }}
         />
       </div>
+
+      {turnoNuevo ? (
+        <p className="mt-4 text-sm text-[var(--alma-text-muted)]">
+          Este turno se reprogramó.{' '}
+          <Link
+            href={`/agenda/${turnoNuevo.id}`}
+            className="font-semibold text-[var(--alma-action)] transition-opacity duration-micro ease-alma hover:opacity-80"
+          >
+            Ver el turno nuevo
+          </Link>{' '}
+          <span className="capitalize">({etiquetaDia(turnoNuevo.fecha)}</span> a las{' '}
+          <span className="tnum">{horaCorta(turnoNuevo.hora)}</span>).
+        </p>
+      ) : null}
 
       {estado === 'completado' && Number(data.precio) > 0 ? (
         <p className="mt-4 text-sm text-[var(--alma-text-muted)]">
