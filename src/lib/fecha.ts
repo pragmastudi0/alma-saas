@@ -29,6 +29,13 @@ export function addDias(iso: string, n: number): string {
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 }
 
+/** Días completos entre dos fechas ISO (positivo si `hasta` es posterior). */
+export function diasEntre(desde: string, hasta: string): number {
+  const [y1, m1, d1] = desde.split('-').map(Number);
+  const [y2, m2, d2] = hasta.split('-').map(Number);
+  return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000);
+}
+
 /** Etiqueta humana: "jueves 16 de julio". */
 export function etiquetaDia(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);

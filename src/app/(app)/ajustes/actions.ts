@@ -8,6 +8,7 @@ import { createAdminSupabase } from '@/lib/supabase/admin';
 import { getSessionContext } from '@/lib/tenant';
 import { desconectarCuentaMp } from '@/lib/mp-oauth';
 import type { AjustesState } from '@/lib/ajustes';
+import { INACTIVIDAD_DIAS_DEFAULT } from '@/lib/inactivos';
 import type { DisponibilidadDia, DisponibilidadState } from '@/lib/disponibilidad';
 import { SLUG_RE } from '@/lib/slug';
 
@@ -17,6 +18,17 @@ const ajustesSchema = z.object({
   precio_default: z.coerce.number().min(0, 'El precio no puede ser negativo.').default(0),
   sena_default: z.coerce.number().min(0, 'La seña no puede ser negativa.').default(0),
   duracion_default: z.coerce.number().int().positive('La duración tiene que ser mayor a cero.'),
+  inactividad_dias: z.coerce
+    .number()
+    .int()
+    .min(1, 'El período de inactividad tiene que ser de al menos 1 día.')
+    .max(365, 'El período de inactividad puede ser de hasta un año (365 días).')
+    .default(INACTIVIDAD_DIAS_DEFAULT),
+  plantilla_cancelacion: z
+    .string()
+    .trim()
+    .max(300, 'La plantilla puede tener hasta 300 caracteres.')
+    .default(''),
   alias_mp: z.string().trim().max(60).default(''),
   slug: z
     .string()
@@ -57,6 +69,8 @@ export async function guardarAjustes(
     precio_default: v.precio_default,
     sena_default: v.sena_default,
     duracion_default: v.duracion_default,
+    inactividad_dias: v.inactividad_dias,
+    plantilla_cancelacion: v.plantilla_cancelacion || null,
     alias_mp: v.alias_mp || null,
   };
 
@@ -73,6 +87,7 @@ export async function guardarAjustes(
 
   revalidatePath('/ajustes');
   revalidatePath('/hoy');
+  revalidatePath('/reportes');
   return { info: 'Guardado.' };
 }
 

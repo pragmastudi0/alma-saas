@@ -13,7 +13,7 @@ export function BottomNav() {
       aria-label="Secciones"
       className="fixed inset-x-0 bottom-0 z-[var(--alma-z-nav)] border-t border-[var(--alma-border)] bg-[var(--alma-bg)] pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      <div className="grid grid-cols-5">
+      <div className="grid grid-cols-6">
         {NAV_ITEMS.map(({ href, label, Icono }) => {
           const activo = pathname === href || pathname.startsWith(href + '/');
           return (

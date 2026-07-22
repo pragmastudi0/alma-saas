@@ -66,6 +66,15 @@ export function IconoAjustes({ className }: { className?: string }) {
   );
 }
 
+export function IconoReportes({ className }: { className?: string }) {
+  return (
+    <Icono className={className}>
+      <path d="M4 4v16h16" />
+      <path d="M8.5 16.5v-4.5M13 16.5V8.5M17.5 16.5v-6.5" />
+    </Icono>
+  );
+}
+
 export function IconoMas({ className }: { className?: string }) {
   return (
     <Icono className={className}>
