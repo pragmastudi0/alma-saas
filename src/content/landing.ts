@@ -4,6 +4,16 @@
  * la landing se actualiza sola. Tono: voseo rioplatense, frases cortas, humano.
  */
 import type { ComponentType } from 'react';
+
+// Configuración de contacto
+export const CONTACTO = {
+  whatsapp: '+541935121456730', // Formateado para wa.me
+  mensaje: 'Hola! Me interesa suscribirme a alma.',
+};
+
+export function waUrl(numero: string = CONTACTO.whatsapp, mensaje: string = CONTACTO.mensaje): string {
+  return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+}
 import {
   IconoCalendario,
   IconoTarjeta,
@@ -21,7 +31,7 @@ export const HERO = {
   titulo: 'Tu consultorio, en orden.',
   subtitulo:
     'alma es la secretaria virtual que se encarga de los turnos, las señas y los recordatorios. Vos atendé; del resto nos ocupamos.',
-  ctaPrimario: { label: 'Probá alma', href: '/registro' },
+  ctaPrimario: { label: 'Probá alma', href: waUrl() },
   ctaSecundario: { label: 'Ya tengo cuenta', href: '/login' },
 };
 
@@ -88,7 +98,7 @@ export const PRECIO = {
     'Caja y ficha de pacientes',
     'Funciones nuevas todo el tiempo, sin costo extra',
   ],
-  cta: { label: 'Empezá ahora', href: '/registro' },
+  cta: { label: 'Empezá ahora', href: waUrl() },
 };
 
 export type Novedad = {
