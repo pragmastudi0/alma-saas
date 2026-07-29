@@ -14,7 +14,7 @@ export interface CalendarEvent {
   servicio_nombre?: string;
   descripcion?: string;
   ubicacion?: string;
-  estado: 'confirmado' | 'cancelado' | 'ausente';
+  estado: 'pendiente_sena' | 'confirmado' | 'completado' | 'cancelado' | 'ausente';
   updated_at: Date;
 }
 
@@ -87,8 +87,9 @@ function generateICalEvent(event: CalendarEvent): string {
   }
   description = description.trim();
 
-  // Estado del evento iCal
-  const status = event.estado === 'confirmado' ? 'CONFIRMED' : 'CANCELLED';
+  // Estado del evento iCal: confirmados y completados son CONFIRMED
+  // Solo cancelados y ausentes son CANCELLED
+  const status = (event.estado === 'confirmado' || event.estado === 'completado') ? 'CONFIRMED' : 'CANCELLED';
 
   // Construir evento
   let icalEvent = `BEGIN:VEVENT\r\n`;
