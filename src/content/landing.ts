@@ -4,6 +4,16 @@
  * la landing se actualiza sola. Tono: voseo rioplatense, frases cortas, humano.
  */
 import type { ComponentType } from 'react';
+
+// Configuración de contacto
+export const CONTACTO = {
+  whatsapp: '+5493512145673', // Formateado para wa.me
+  mensaje: 'Hola! Me interesa suscribirme a alma.',
+};
+
+export function waUrl(numero: string = CONTACTO.whatsapp, mensaje: string = CONTACTO.mensaje): string {
+  return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+}
 import {
   IconoCalendario,
   IconoTarjeta,
@@ -21,7 +31,7 @@ export const HERO = {
   titulo: 'Tu consultorio, en orden.',
   subtitulo:
     'alma es la secretaria virtual que se encarga de los turnos, las señas y los recordatorios. Vos atendé; del resto nos ocupamos.',
-  ctaPrimario: { label: 'Probá alma', href: '/registro' },
+  ctaPrimario: { label: 'Probá alma', href: waUrl() },
   ctaSecundario: { label: 'Ya tengo cuenta', href: '/login' },
 };
 
@@ -67,6 +77,11 @@ export const FEATURES: Feature[] = [
     titulo: 'Servicios y empleados',
     texto: 'Configurá los servicios que ofrecés con su precio y duración, y asignále los turnos a cada empleado.',
   },
+  {
+    Icono: IconoCalendario,
+    titulo: 'Sincronización con calendarios',
+    texto: 'Tus turnos aparecen automáticamente en Apple Calendar, Google Calendar, Outlook. Sincronizado en tiempo real.',
+  },
 ];
 
 export const PRECIO = {
@@ -83,8 +98,53 @@ export const PRECIO = {
     'Caja y ficha de pacientes',
     'Funciones nuevas todo el tiempo, sin costo extra',
   ],
-  cta: { label: 'Empezá ahora', href: '/registro' },
+  cta: { label: 'Empezá ahora', href: waUrl() },
 };
+
+export type Novedad = {
+  fecha: string;
+  titulo: string;
+  descripcion: string;
+  icono?: string;
+};
+
+export const NOVEDADES: Novedad[] = [
+  {
+    fecha: '29 de julio',
+    titulo: 'Sincronización con calendarios',
+    descripcion:
+      'Tus turnos ahora se sincronizan automáticamente con Apple Calendar, Google Calendar, Outlook y cualquier app que use iCal. Generá una URL única en Ajustes → Integraciones y agregala a tu calendario.',
+    icono: '📅',
+  },
+  {
+    fecha: '15 de julio',
+    titulo: 'Servicios y empleados',
+    descripcion:
+      'Configurá múltiples servicios con precio y duración propios. Asignale turnos a diferentes empleados. Perfecto si trabajás con equipo.',
+    icono: '👥',
+  },
+  {
+    fecha: '1 de julio',
+    titulo: 'Notificaciones de turnos nuevos',
+    descripcion:
+      'Ves una campanita en Hoy cuando tus pacientes reservan desde el portal. Sabés al instante quién se anotó.',
+    icono: '🔔',
+  },
+  {
+    fecha: '15 de junio',
+    titulo: 'Reportes mensuales',
+    descripcion:
+      'Panel de reportes con ingresos del mes, pacientes inactivos y tendencias. Todo en un vistazo.',
+    icono: '📊',
+  },
+  {
+    fecha: '1 de junio',
+    titulo: 'Alma lanzada',
+    descripcion:
+      'Agenda, seña por Mercado Pago, WhatsApp, caja y portal de reservas. Todo lo que necesitás para organizar tu consultorio.',
+    icono: '🚀',
+  },
+];
 
 export const FAQ: { pregunta: string; respuesta: string }[] = [
   {

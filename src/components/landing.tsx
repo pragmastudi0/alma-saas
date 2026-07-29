@@ -1,6 +1,10 @@
 import Link from 'next/link';
 import { Flor } from '@/components/flor';
-import { HERO, FEATURES, PRECIO, FAQ } from '@/content/landing';
+import { HERO, FEATURES, PRECIO, FAQ, NOVEDADES, waUrl } from '@/content/landing';
+
+function isExternalUrl(href: string): boolean {
+  return href.startsWith('http://') || href.startsWith('https://');
+}
 
 const ctaPrimarioCls =
   'inline-flex h-12 items-center justify-center rounded-full bg-[var(--alma-action)] px-6 text-sm font-semibold text-[var(--alma-on-action)] shadow-brand transition-transform duration-micro ease-alma hover:scale-[1.03] active:scale-95';
@@ -25,12 +29,14 @@ export function Landing() {
             >
               Iniciá sesión
             </Link>
-            <Link
-              href="/registro"
+            <a
+              href={waUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex h-10 items-center rounded-full bg-[var(--alma-action)] px-4 text-sm font-semibold text-[var(--alma-on-action)] shadow-brand transition-transform duration-micro ease-alma hover:scale-[1.03] active:scale-95"
             >
               Crear cuenta
-            </Link>
+            </a>
           </nav>
         </div>
       </header>
@@ -49,9 +55,20 @@ export function Landing() {
               {HERO.subtitulo}
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href={HERO.ctaPrimario.href} className={ctaPrimarioCls}>
-                {HERO.ctaPrimario.label}
-              </Link>
+              {isExternalUrl(HERO.ctaPrimario.href) ? (
+                <a
+                  href={HERO.ctaPrimario.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={ctaPrimarioCls}
+                >
+                  {HERO.ctaPrimario.label}
+                </a>
+              ) : (
+                <Link href={HERO.ctaPrimario.href} className={ctaPrimarioCls}>
+                  {HERO.ctaPrimario.label}
+                </Link>
+              )}
               <Link href={HERO.ctaSecundario.href} className={ctaSecundarioCls}>
                 {HERO.ctaSecundario.label}
               </Link>
@@ -121,6 +138,42 @@ export function Landing() {
           </div>
         </section>
 
+        {/* Novedades destacadas */}
+        <section className="py-8 md:py-12">
+          <h2 className="voice text-[28px] leading-tight text-[var(--alma-text)] md:text-[36px]">
+            Lo nuevo en alma
+          </h2>
+          <p className="mt-2 max-w-lg text-[15px] text-[var(--alma-text-muted)]">
+            Mirá las últimas funciones que sumamos.
+          </p>
+
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {NOVEDADES.slice(0, 4).map(({ fecha, titulo, descripcion, icono }) => (
+              <div
+                key={titulo}
+                className="rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] p-5 transition-colors duration-micro ease-alma hover:border-[var(--alma-text-muted)]"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[.06em] text-[var(--alma-text-muted)]">
+                  {fecha}
+                </p>
+                <h3 className="mt-3 text-[16px] font-semibold">
+                  {icono} {titulo}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--alma-text-muted)]">
+                  {descripcion}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <Link
+            href="/novedades"
+            className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[var(--alma-action)] transition-colors hover:text-[var(--alma-action-hover)]"
+          >
+            Ver todas las novedades →
+          </Link>
+        </section>
+
         {/* Precio */}
         <section id="precio" className="py-8 md:py-12">
           <div className="mx-auto max-w-md rounded-xl border border-[var(--alma-border)] bg-[var(--alma-surface)] p-7 shadow-1">
@@ -157,9 +210,20 @@ export function Landing() {
               ))}
             </ul>
 
-            <Link href={PRECIO.cta.href} className={`${ctaPrimarioCls} mt-7 w-full`}>
-              {PRECIO.cta.label}
-            </Link>
+            {isExternalUrl(PRECIO.cta.href) ? (
+              <a
+                href={PRECIO.cta.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${ctaPrimarioCls} mt-7 w-full`}
+              >
+                {PRECIO.cta.label}
+              </a>
+            ) : (
+              <Link href={PRECIO.cta.href} className={`${ctaPrimarioCls} mt-7 w-full`}>
+                {PRECIO.cta.label}
+              </Link>
+            )}
           </div>
         </section>
 
@@ -187,12 +251,23 @@ export function Landing() {
             <p className="mx-auto mt-3 max-w-md text-[15px] opacity-85">
               Creá tu cuenta y cargá tu primer turno en minutos.
             </p>
-            <Link
-              href={HERO.ctaPrimario.href}
-              className="mt-7 inline-flex h-12 items-center justify-center rounded-full bg-white px-7 text-sm font-semibold text-[var(--verde-700)] transition-transform duration-micro ease-alma hover:scale-[1.03] active:scale-95"
-            >
-              {HERO.ctaPrimario.label}
-            </Link>
+            {isExternalUrl(HERO.ctaPrimario.href) ? (
+              <a
+                href={HERO.ctaPrimario.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-7 inline-flex h-12 items-center justify-center rounded-full bg-white px-7 text-sm font-semibold text-[var(--verde-700)] transition-transform duration-micro ease-alma hover:scale-[1.03] active:scale-95"
+              >
+                {HERO.ctaPrimario.label}
+              </a>
+            ) : (
+              <Link
+                href={HERO.ctaPrimario.href}
+                className="mt-7 inline-flex h-12 items-center justify-center rounded-full bg-white px-7 text-sm font-semibold text-[var(--verde-700)] transition-transform duration-micro ease-alma hover:scale-[1.03] active:scale-95"
+              >
+                {HERO.ctaPrimario.label}
+              </Link>
+            )}
           </div>
         </section>
       </main>
@@ -211,12 +286,14 @@ export function Landing() {
             >
               Iniciá sesión
             </Link>
-            <Link
-              href="/registro"
+            <a
+              href={waUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
               className="transition-colors duration-micro ease-alma hover:text-[var(--alma-text)]"
             >
               Crear cuenta
-            </Link>
+            </a>
           </div>
         </div>
       </footer>

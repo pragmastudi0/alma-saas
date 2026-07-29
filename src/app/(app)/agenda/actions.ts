@@ -12,6 +12,7 @@ import { obtenerCredencialMp } from '@/lib/mp-oauth';
 import { registrarIngresoTurno, nombrePaciente } from '@/lib/caja';
 import { calcularSlots } from '@/lib/slots';
 import { diaSemanaDe } from '@/lib/fecha';
+import { syncToCalendar } from '@/lib/calendar-sync';
 import type { AgendaState, Estado, MpLinkState, HorariosDia, TurnoOcupado } from '@/lib/turno';
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
@@ -125,6 +126,17 @@ export async function crearTurno(_prev: AgendaState, formData: FormData): Promis
     return { error: 'No pudimos guardar el turno. Probá de nuevo.' };
   }
 
+  // Sincronizar con calendarios (Apple Calendar, Google Calendar, etc.)
+  // Solo si el turno nació confirmado (sin seña pendiente)
+  if (estado === 'confirmado') {
+    try {
+      await syncToCalendar('CREATE', nuevo.id, ctx.tenantId);
+    } catch (err) {
+      console.error('[crearTurno] Calendar sync failed:', err);
+      // No rompemos el flujo: calendario es secundario
+    }
+  }
+
   // Reprogramación: dejamos el turno original apuntando al nuevo. La guarda de
   // estado evita marcar por error un turno que no estaba cancelado/ausente.
   if (v.origen) {
@@ -177,6 +189,14 @@ export async function editarTurno(_prev: AgendaState, formData: FormData): Promi
   }
   if (!data?.length) {
     return { error: 'No encontramos ese turno.' };
+  }
+
+  // Sincronizar cambios con calendarios
+  try {
+    await syncToCalendar('UPDATE', v.id, ctx.tenantId);
+  } catch (err) {
+    console.error('[editarTurno] Calendar sync failed:', err);
+    // No rompemos el flujo: calendario es secundario
   }
 
   revalidatePath('/agenda');
@@ -235,6 +255,21 @@ async function transicionar(
     } catch {
       // La transición ya quedó firme: no rompemos la acción por la caja.
     }
+  }
+
+  // Sincronizar cambios con calendarios
+  try {
+    const newState = (cambios.estado as string) || 'confirmado';
+    if (newState === 'cancelado' || newState === 'ausente') {
+      // Eliminar evento del calendario (marcar como CANCELLED)
+      await syncToCalendar('DELETE', parsed.data.id, ctx.tenantId);
+    } else if (newState === 'confirmado') {
+      // Confirmar seña → marcar como confirmado en calendario
+      await syncToCalendar('UPDATE', parsed.data.id, ctx.tenantId);
+    }
+  } catch (err) {
+    console.error('[transicionar] Calendar sync failed:', err);
+    // No rompemos el flujo: calendario es secundario
   }
 
   revalidatePath('/agenda');
