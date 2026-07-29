@@ -112,7 +112,7 @@ export default async function AjustesPage({
         <p className="mb-3 text-xs font-semibold uppercase tracking-[.08em] text-[var(--alma-text-muted)]">
           Integraciones
         </p>
-        <CalendarSettings baseUrl={siteUrl()} />
+        <CalendarSettings />
       </section>
 
       <AjustesForm

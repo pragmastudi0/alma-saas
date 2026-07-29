@@ -15,6 +15,7 @@ type TurnoRow = {
   fecha: string;
   hora: string;
   estado: Estado;
+  reprogramado_a?: string | null;
 };
 
 export default async function PacienteDetallePage({
@@ -41,7 +42,7 @@ export default async function PacienteDetallePage({
 
   const { data: turnos } = await supabase
     .from('alma_appointments')
-    .select('id, fecha, hora, estado')
+    .select('id, fecha, hora, estado, reprogramado_a')
     .eq('patient_id', id)
     .order('fecha', { ascending: false })
     .order('hora', { ascending: false })
@@ -114,19 +115,34 @@ export default async function PacienteDetallePage({
           <p className="text-sm text-[var(--alma-text-muted)]">Todavía no tiene turnos.</p>
         ) : (
           <ul className="flex flex-col gap-2">
-            {historial.map((t) => (
-              <li key={t.id}>
-                <Link
-                  href={`/agenda/${t.id}`}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] px-3.5 py-3 transition-colors duration-micro ease-alma hover:border-[var(--alma-text-muted)]"
-                >
-                  <span className="text-sm capitalize">
-                    {etiquetaDia(t.fecha)} · <span className="tnum">{horaCorta(t.hora)}</span>
-                  </span>
-                  <EstadoBadge estado={t.estado} />
-                </Link>
-              </li>
-            ))}
+            {historial.map((t) => {
+              const puedReprogramar = (t.estado === 'cancelado' || t.estado === 'ausente') && !t.reprogramado_a;
+              return (
+                <li key={t.id}>
+                  {puedReprogramar ? (
+                    <Link
+                      href={`/agenda/nuevo?p=${p.id}&origen=${t.id}`}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-verde-600 bg-verde-50 px-3.5 py-3 font-semibold text-verde-700 transition-colors duration-micro ease-alma hover:bg-verde-100"
+                    >
+                      <span className="text-sm">
+                        {etiquetaDia(t.fecha)} · <span className="tnum">{horaCorta(t.hora)}</span> · Reprogramar
+                      </span>
+                      <EstadoBadge estado={t.estado} />
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/agenda/${t.id}`}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] px-3.5 py-3 transition-colors duration-micro ease-alma hover:border-[var(--alma-text-muted)]"
+                    >
+                      <span className="text-sm capitalize">
+                        {etiquetaDia(t.fecha)} · <span className="tnum">{horaCorta(t.hora)}</span>
+                      </span>
+                      <EstadoBadge estado={t.estado} />
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
