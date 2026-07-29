@@ -5,14 +5,14 @@ import { Clipboard, Check } from 'lucide-react';
 
 interface CalendarSettingsProps {
   subscriptionToken?: string;
-  baseUrl?: string;
 }
 
-export function CalendarSettings({ subscriptionToken, baseUrl = 'https://alma-app.com' }: CalendarSettingsProps) {
+export function CalendarSettings({ subscriptionToken }: CalendarSettingsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const [token, setToken] = useState(subscriptionToken);
+  const [icalUrl, setIcalUrl] = useState(subscriptionToken ? `${window.location.origin}/api/calendars/ical/${subscriptionToken}` : '');
 
   async function generateSubscriptionUrl() {
     setIsLoading(true);
@@ -24,18 +24,20 @@ export function CalendarSettings({ subscriptionToken, baseUrl = 'https://alma-ap
         headers: { 'Content-Type': 'application/json' },
       });
 
-      if (!response.ok) throw new Error('No pudimos generar la URL');
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'No pudimos generar la URL');
+      }
 
       const data = await response.json();
       setToken(data.subscription_token);
+      setIcalUrl(data.ical_url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
       setIsLoading(false);
     }
   }
-
-  const icalUrl = token ? `${baseUrl}/api/calendars/ical/${token}` : '';
 
   function copyToClipboard() {
     if (!icalUrl) return;

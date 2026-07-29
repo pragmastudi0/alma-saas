@@ -11,7 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerSupabase } from '@/lib/supabase/server';
 import { getSessionContext } from '@/lib/tenant';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -29,18 +29,8 @@ export async function POST(req: NextRequest) {
 
     const { tenantId } = context;
 
-    // 2. Crear cliente Supabase con token del usuario (para respetar RLS)
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${req.headers.get('authorization')?.split(' ')[1] || ''}`,
-          },
-        },
-      }
-    );
+    // 2. Crear cliente Supabase con sesión del usuario (para respetar RLS)
+    const supabase = await createServerSupabase();
 
     // 3. Verificar si ya existe una suscripción para este tenant
     const { data: existing, error: checkError } = await supabase
