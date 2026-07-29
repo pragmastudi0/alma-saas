@@ -5,6 +5,7 @@ import { ServiciosList } from '@/components/servicios-list';
 import { EmpleadosList } from '@/components/empleados-list';
 import { LinkPublico } from '@/components/link-publico';
 import { MpConexion } from '@/components/mp-conexion';
+import { CalendarSettings } from '@/components/calendar-settings';
 import type { DisponibilidadDia } from '@/lib/disponibilidad';
 import { INACTIVIDAD_DIAS_DEFAULT } from '@/lib/inactivos';
 import { PLANTILLA_CANCELACION_DEFAULT } from '@/lib/whatsapp';
@@ -105,6 +106,13 @@ export default async function AjustesPage({
           Cobros · Mercado Pago
         </p>
         <MpConexion cuenta={cuentaMp ?? null} />
+      </section>
+
+      <section className="mb-6">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[.08em] text-[var(--alma-text-muted)]">
+          Integraciones
+        </p>
+        <CalendarSettings baseUrl={siteUrl()} />
       </section>
 
       <AjustesForm
