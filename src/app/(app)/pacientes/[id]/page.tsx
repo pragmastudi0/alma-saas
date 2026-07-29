@@ -44,9 +44,9 @@ export default async function PacienteDetallePage({
     .from('alma_appointments')
     .select('id, fecha, hora, estado, reprogramado_a')
     .eq('patient_id', id)
-    .order('fecha', { ascending: false })
+    .order('fecha', { ascending: true })
     .order('hora', { ascending: false })
-    .limit(30);
+    .limit(50);
 
   const historial = (turnos ?? []) as TurnoRow[];
 
