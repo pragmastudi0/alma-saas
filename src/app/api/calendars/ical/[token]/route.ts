@@ -6,15 +6,23 @@
  * Características:
  * - Acceso público (sin autenticación)
  * - Validación de token
- * - Caché HTTP con ETag
+ * - Caché HTTP con ETag basado en timestamp de actualizaciones
  * - Timezone: America/Argentina/Buenos_Aires
+ *
+ * Nota: No usamos ISR (revalidate) porque interfiere con la invalidación
+ * de caché cuando se crean nuevos eventos. En su lugar, confiamos en:
+ * 1. ETag que cambia cuando appointments se actualizan
+ * 2. Calendar apps que respetan If-None-Match
+ * 3. HTTP Cache-Control con max-age corto (1 minuto)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { generateICalendar, calculateICalHash } from '@/lib/ical-generator';
 import { getTenantFromSubscriptionToken, getAppointmentsForCalendar } from '@/lib/calendar-sync';
 
-export const revalidate = 300; // 5 minutos de caché a nivel de Next.js
+// Deshabilitamos ISR para este endpoint — queremos que sea dinámico
+// para que el ETag cambie cuando hay nuevos eventos
+export const revalidate = false;
 
 export async function GET(
   req: NextRequest,
@@ -47,8 +55,13 @@ export async function GET(
     // 3. Generar iCal
     const icalContent = generateICalendar(appointments);
 
-    // 4. Calcular ETag para caché
-    const etag = `"${calculateICalHash(icalContent)}"`;
+    // 4. Calcular ETag basado en contenido + timestamp más reciente
+    // Esto asegura que el ETag cambie cuando hay nuevos eventos
+    const latestUpdate = appointments.length > 0
+      ? Math.max(...appointments.map((a) => new Date(a.updated_at).getTime()))
+      : Date.now();
+    const etagInput = `${calculateICalHash(icalContent)}-${latestUpdate}`;
+    const etag = `"${etagInput}"`;
 
     // 5. Verificar If-None-Match (caché del cliente)
     const ifNoneMatch = req.headers.get('if-none-match');
@@ -57,14 +70,17 @@ export async function GET(
       return new NextResponse(null, { status: 304 });
     }
 
-    // 6. Servir iCal con headers de caché
+    // 6. Servir iCal con headers de caché inteligentes
+    // max-age=60 (1 minuto) — las apps de calendario normalmente polling cada 15-30 min
+    // pero no queremos que pierdan eventos por más de 1 minuto
     const response = new NextResponse(icalContent, {
       status: 200,
       headers: {
         'Content-Type': 'text/calendar; charset=utf-8',
         'Content-Disposition': 'attachment; filename="alma-calendar.ics"',
-        'Cache-Control': 'public, max-age=300, must-revalidate', // 5 minutos
+        'Cache-Control': 'public, max-age=60, must-revalidate', // 1 minuto en lugar de 5
         'ETag': etag,
+        'X-Content-Type-Options': 'nosniff',
       },
     });
 
