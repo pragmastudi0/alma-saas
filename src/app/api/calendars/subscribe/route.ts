@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Construir URL del feed iCal
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://alma-app.com';
+    const baseUrl = req.nextUrl.origin;
     const icalUrl = `${baseUrl}/api/calendars/ical/${subscriptionToken}`;
 
     // 5. Devolver respuesta
