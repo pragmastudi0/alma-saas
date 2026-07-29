@@ -1,1 +1,39 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#0E5F4C"><ellipse cx="12" cy="5.5" rx="3" ry="4.6"/><ellipse cx="12" cy="18.5" rx="3" ry="4.6"/><ellipse cx="5.5" cy="12" rx="4.6" ry="3"/><ellipse cx="18.5" cy="12" rx="4.6" ry="3"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="none">
+  <!-- Fondo blanco para mejor contraste -->
+  <circle cx="128" cy="128" r="128" fill="#ffffff"/>
+
+  <!-- Pétalos principales con degradado -->
+  <defs>
+    <linearGradient id="petalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0E5F4C;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#073C32;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Pétalo superior -->
+  <ellipse cx="128" cy="48" rx="28" ry="44" fill="url(#petalGrad)" opacity="0.95"/>
+
+  <!-- Pétalo inferior -->
+  <ellipse cx="128" cy="208" rx="28" ry="44" fill="url(#petalGrad)" opacity="0.95"/>
+
+  <!-- Pétalo izquierdo -->
+  <ellipse cx="48" cy="128" rx="44" ry="28" fill="url(#petalGrad)" opacity="0.95"/>
+
+  <!-- Pétalo derecho -->
+  <ellipse cx="208" cy="128" rx="44" ry="28" fill="url(#petalGrad)" opacity="0.95"/>
+
+  <!-- Pétalos diagonales con opacidad reducida -->
+  <ellipse cx="81" cy="81" rx="32" ry="32" fill="url(#petalGrad)" opacity="0.6" transform="rotate(45 81 81)"/>
+  <ellipse cx="175" cy="81" rx="32" ry="32" fill="url(#petalGrad)" opacity="0.6" transform="rotate(-45 175 81)"/>
+  <ellipse cx="81" cy="175" rx="32" ry="32" fill="url(#petalGrad)" opacity="0.6" transform="rotate(-45 81 175)"/>
+  <ellipse cx="175" cy="175" rx="32" ry="32" fill="url(#petalGrad)" opacity="0.6" transform="rotate(45 175 175)"/>
+
+  <!-- Centro - círculo principal -->
+  <circle cx="128" cy="128" r="36" fill="#0E5F4C"/>
+
+  <!-- Centro - círculo interior para efecto -->
+  <circle cx="128" cy="128" r="24" fill="#ffffff" opacity="0.15"/>
+
+  <!-- Puntos decorativos en el centro -->
+  <circle cx="128" cy="128" r="4" fill="#ffffff" opacity="0.8"/>
+</svg>
