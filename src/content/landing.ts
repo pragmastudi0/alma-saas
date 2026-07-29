@@ -7,7 +7,7 @@ import type { ComponentType } from 'react';
 
 // Configuración de contacto
 export const CONTACTO = {
-  whatsapp: '+541935121456730', // Formateado para wa.me
+  whatsapp: '+5493512145673', // Formateado para wa.me
   mensaje: 'Hola! Me interesa suscribirme a alma.',
 };
 
