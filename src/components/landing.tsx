@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Flor } from '@/components/flor';
-import { HERO, FEATURES, PRECIO, FAQ } from '@/content/landing';
+import { HERO, FEATURES, PRECIO, FAQ, NOVEDADES } from '@/content/landing';
 
 const ctaPrimarioCls =
   'inline-flex h-12 items-center justify-center rounded-full bg-[var(--alma-action)] px-6 text-sm font-semibold text-[var(--alma-on-action)] shadow-brand transition-transform duration-micro ease-alma hover:scale-[1.03] active:scale-95';
@@ -119,6 +119,42 @@ export function Landing() {
               que hacer nada.
             </p>
           </div>
+        </section>
+
+        {/* Novedades destacadas */}
+        <section className="py-8 md:py-12">
+          <h2 className="voice text-[28px] leading-tight text-[var(--alma-text)] md:text-[36px]">
+            Lo nuevo en alma
+          </h2>
+          <p className="mt-2 max-w-lg text-[15px] text-[var(--alma-text-muted)]">
+            Mirá las últimas funciones que sumamos.
+          </p>
+
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {NOVEDADES.slice(0, 4).map(({ fecha, titulo, descripcion, icono }) => (
+              <div
+                key={titulo}
+                className="rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] p-5 transition-colors duration-micro ease-alma hover:border-[var(--alma-text-muted)]"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[.06em] text-[var(--alma-text-muted)]">
+                  {fecha}
+                </p>
+                <h3 className="mt-3 text-[16px] font-semibold">
+                  {icono} {titulo}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--alma-text-muted)]">
+                  {descripcion}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <Link
+            href="/novedades"
+            className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[var(--alma-action)] transition-colors hover:text-[var(--alma-action-hover)]"
+          >
+            Ver todas las novedades →
+          </Link>
         </section>
 
         {/* Precio */}

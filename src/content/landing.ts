@@ -67,6 +67,11 @@ export const FEATURES: Feature[] = [
     titulo: 'Servicios y empleados',
     texto: 'Configurá los servicios que ofrecés con su precio y duración, y asignále los turnos a cada empleado.',
   },
+  {
+    Icono: IconoCalendario,
+    titulo: 'Sincronización con calendarios',
+    texto: 'Tus turnos aparecen automáticamente en Apple Calendar, Google Calendar, Outlook. Sincronizado en tiempo real.',
+  },
 ];
 
 export const PRECIO = {
@@ -85,6 +90,51 @@ export const PRECIO = {
   ],
   cta: { label: 'Empezá ahora', href: '/registro' },
 };
+
+export type Novedad = {
+  fecha: string;
+  titulo: string;
+  descripcion: string;
+  icono?: string;
+};
+
+export const NOVEDADES: Novedad[] = [
+  {
+    fecha: '29 de julio',
+    titulo: 'Sincronización con calendarios',
+    descripcion:
+      'Tus turnos ahora se sincronizan automáticamente con Apple Calendar, Google Calendar, Outlook y cualquier app que use iCal. Generá una URL única en Ajustes → Integraciones y agregala a tu calendario.',
+    icono: '📅',
+  },
+  {
+    fecha: '15 de julio',
+    titulo: 'Servicios y empleados',
+    descripcion:
+      'Configurá múltiples servicios con precio y duración propios. Asignale turnos a diferentes empleados. Perfecto si trabajás con equipo.',
+    icono: '👥',
+  },
+  {
+    fecha: '1 de julio',
+    titulo: 'Notificaciones de turnos nuevos',
+    descripcion:
+      'Ves una campanita en Hoy cuando tus pacientes reservan desde el portal. Sabés al instante quién se anotó.',
+    icono: '🔔',
+  },
+  {
+    fecha: '15 de junio',
+    titulo: 'Reportes mensuales',
+    descripcion:
+      'Panel de reportes con ingresos del mes, pacientes inactivos y tendencias. Todo en un vistazo.',
+    icono: '📊',
+  },
+  {
+    fecha: '1 de junio',
+    titulo: 'Alma lanzada',
+    descripcion:
+      'Agenda, seña por Mercado Pago, WhatsApp, caja y portal de reservas. Todo lo que necesitás para organizar tu consultorio.',
+    icono: '🚀',
+  },
+];
 
 export const FAQ: { pregunta: string; respuesta: string }[] = [
   {
