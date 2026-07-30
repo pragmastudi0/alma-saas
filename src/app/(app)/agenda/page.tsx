@@ -7,6 +7,7 @@ import { Fab, AccionNueva } from '@/components/fab';
 import { MesAgenda, type MesTurno } from '@/components/mes-agenda';
 import { MesCalendario } from '@/components/mes-calendario';
 import { nombrePaciente } from '@/lib/caja';
+import { senaModoDe } from '@/lib/sena';
 import {
   addDias,
   addMeses,
@@ -143,7 +144,11 @@ export default async function AgendaPage({
   if (employeeId) {
     query = query.eq('employee_id', employeeId);
   }
-  const { data } = await query;
+  const [{ data }, { data: tenant }] = await Promise.all([
+    query,
+    supabase.from('alma_tenants').select('settings').maybeSingle(),
+  ]);
+  const senaModo = senaModoDe(tenant?.settings);
 
   const turnos: TurnoCardData[] = (data ?? []).map((r) => ({
     id: r.id,
@@ -207,7 +212,7 @@ export default async function AgendaPage({
         <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           {turnos.map((t) => (
             <li key={t.id}>
-              <TurnoCard t={t} />
+              <TurnoCard t={t} senaModo={senaModo} />
             </li>
           ))}
         </ul>

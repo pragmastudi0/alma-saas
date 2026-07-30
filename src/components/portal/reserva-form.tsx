@@ -17,6 +17,7 @@ export function ReservaForm({
   slots,
   nombreProfesional,
   sena,
+  senaOpcional = false,
   serviceId,
   serviceNombre,
   employeeId,
@@ -27,6 +28,8 @@ export function ReservaForm({
   slots: string[];
   nombreProfesional: string;
   sena: number;
+  /** Si el profesional dejó la seña como opcional: el paciente elige si la paga ahora. */
+  senaOpcional?: boolean;
   serviceId?: string;
   serviceNombre?: string | null;
   employeeId?: string;
@@ -142,17 +145,46 @@ export function ReservaForm({
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={pending || !hora}
-        className="rounded-md bg-[var(--alma-action)] px-4 py-3 font-semibold text-[var(--alma-on-action)] shadow-brand transition-opacity duration-micro ease-alma disabled:opacity-40"
-      >
-        {pending ? 'Un momento…' : sena > 0 ? `Reservar y pagar la seña` : 'Reservar el turno'}
-      </button>
+      {/* Con la seña opcional el paciente elige: paga ahora o reserva y arregla
+          después. El botón que aprieta viaja como pagar_sena. */}
+      {sena > 0 && senaOpcional ? (
+        <div className="flex flex-col gap-2.5">
+          <button
+            type="submit"
+            name="pagar_sena"
+            value="1"
+            disabled={pending || !hora}
+            className="rounded-md bg-[var(--alma-action)] px-4 py-3 font-semibold text-[var(--alma-on-action)] shadow-brand transition-opacity duration-micro ease-alma disabled:opacity-40"
+          >
+            {pending ? 'Un momento…' : 'Reservar y pagar la seña'}
+          </button>
+          <button
+            type="submit"
+            name="pagar_sena"
+            value="0"
+            disabled={pending || !hora}
+            className="rounded-md border border-[var(--alma-border)] px-4 py-3 font-semibold text-[var(--alma-text-muted)] transition-colors duration-micro ease-alma hover:text-[var(--alma-text)] disabled:opacity-40"
+          >
+            {pending ? 'Un momento…' : 'Reservar sin seña'}
+          </button>
+        </div>
+      ) : (
+        <button
+          type="submit"
+          name="pagar_sena"
+          value="1"
+          disabled={pending || !hora}
+          className="rounded-md bg-[var(--alma-action)] px-4 py-3 font-semibold text-[var(--alma-on-action)] shadow-brand transition-opacity duration-micro ease-alma disabled:opacity-40"
+        >
+          {pending ? 'Un momento…' : sena > 0 ? 'Reservar y pagar la seña' : 'Reservar el turno'}
+        </button>
+      )}
 
       <p className="text-center text-xs text-[var(--alma-text-muted)]">
         {sena > 0
-          ? `Para confirmar el turno vas a dejar una seña de ${pesos(sena)} por Mercado Pago.`
+          ? senaOpcional
+            ? `La seña de ${pesos(sena)} es opcional: si preferís, reservás ahora y la arreglás con ${nombreProfesional}.`
+            : `Para confirmar el turno vas a dejar una seña de ${pesos(sena)} por Mercado Pago.`
           : employeeNombre
             ? `Tu turno con ${employeeNombre} te espera.`
             : serviceNombre

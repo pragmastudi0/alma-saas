@@ -5,6 +5,7 @@ import { ReservaForm } from '@/components/portal/reserva-form';
 import { addDias, etiquetaDia, etiquetaRelativa, hoyISO } from '@/lib/fecha';
 import { pesos } from '@/lib/format';
 import { getTenantPorSlug } from '@/lib/portal';
+import { montoSenaEfectivo, senaModoDe } from '@/lib/sena';
 import { slotsDelDia } from '@/lib/slots';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 
@@ -62,7 +63,11 @@ export default async function PortalPage({
   const serviceId = servicioElegido?.id ?? '';
   const duracionMin = servicioElegido?.duracion_min ?? tenant.settings.duracion_default ?? 45;
   const precio = servicioElegido?.precio ?? tenant.settings.precio_default ?? 0;
-  const sena = servicioElegido?.sena_monto ?? tenant.settings.sena_default ?? 0;
+  const senaModo = senaModoDe(tenant.settings);
+  const sena = montoSenaEfectivo(
+    Number(servicioElegido?.sena_monto ?? tenant.settings.sena_default ?? 0),
+    senaModo,
+  );
 
   // ── Empleados ──────────────────────────────────────
   const { data: empleados } = await admin
@@ -147,7 +152,7 @@ export default async function PortalPage({
                 </div>
                 <div className="mt-0.5 flex items-center gap-3 text-xs text-[var(--alma-text-muted)]">
                   <span className="tnum">{sv.duracion_min} min</span>
-                  {Number(sv.sena_monto) > 0 && (
+                  {senaModo !== 'no' && Number(sv.sena_monto) > 0 && (
                     <span>seña de <span className="tnum">{pesos(Number(sv.sena_monto))}</span></span>
                   )}
                 </div>
@@ -192,6 +197,7 @@ export default async function PortalPage({
           slots={slots}
           nombreProfesional={tenant.nombre}
           sena={sena}
+          senaOpcional={senaModo === 'opcional'}
           serviceId={serviceId}
           serviceNombre={servicioElegido?.nombre ?? null}
           employeeId={employeeId}

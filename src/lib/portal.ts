@@ -15,6 +15,7 @@ export type TenantPublico = {
     sena_default?: number;
     duracion_default?: number;
     alias_mp?: string | null;
+    sena_modo?: string;
   };
 };
 

@@ -21,6 +21,7 @@ export function ServiciosList({
   servicios,
   empleados,
   empleadosPorServicio,
+  cobraSena = true,
   onGuardar,
   onToggle,
   onToggleEmpleado,
@@ -28,6 +29,8 @@ export function ServiciosList({
   servicios: Servicio[];
   empleados: Empleado[];
   empleadosPorServicio: Record<string, string[]>;
+  /** Si el profesional cobra seña; cuando no, el campo por servicio no se muestra. */
+  cobraSena?: boolean;
   onGuardar: (prev: AjustesState, formData: FormData) => Promise<AjustesState>;
   onToggle: (formData: FormData) => Promise<void>;
   onToggleEmpleado: (formData: FormData) => Promise<void>;
@@ -43,6 +46,7 @@ export function ServiciosList({
         servicio={s}
         empleados={empleados}
         empleadosAsignados={s ? empleadosPorServicio[s.id] ?? [] : []}
+        cobraSena={cobraSena}
         onGuardar={onGuardar}
         onToggleEmpleado={onToggleEmpleado}
         onCancel={() => {
@@ -89,7 +93,9 @@ export function ServiciosList({
                     </p>
                     <p className="tnum text-xs text-[var(--alma-text-muted)]">
                       {pesos(Number(s.precio))} · {s.duracion_min} min
-                      {Number(s.sena_monto) > 0 && ` · seña ${pesos(Number(s.sena_monto))}`}
+                      {cobraSena &&
+                        Number(s.sena_monto) > 0 &&
+                        ` · seña ${pesos(Number(s.sena_monto))}`}
                     </p>
                     {empNombres.length > 0 && (
                       <p className="mt-0.5 text-xs text-[var(--alma-text-muted)]">
@@ -145,6 +151,7 @@ function ServicioForm({
   servicio,
   empleados,
   empleadosAsignados,
+  cobraSena,
   onGuardar,
   onToggleEmpleado,
   onCancel,
@@ -152,6 +159,7 @@ function ServicioForm({
   servicio?: Servicio;
   empleados: Empleado[];
   empleadosAsignados: string[];
+  cobraSena: boolean;
   onGuardar: (prev: AjustesState, formData: FormData) => Promise<AjustesState>;
   onToggleEmpleado: (formData: FormData) => Promise<void>;
   onCancel: () => void;
@@ -172,7 +180,7 @@ function ServicioForm({
         <input name="descripcion" defaultValue={servicio?.descripcion ?? ''} className={inputCls} />
       </label>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className={`grid gap-3 ${cobraSena ? 'grid-cols-3' : 'grid-cols-2'}`}>
         <label className="block">
           <span className={labelCls}>Precio</span>
           <input
@@ -185,17 +193,21 @@ function ServicioForm({
             className={inputCls + ' tnum'}
           />
         </label>
-        <label className="block">
-          <span className={labelCls}>Seña</span>
-          <input
-            name="sena_monto"
-            type="number"
-            min={0}
-            step={500}
-            defaultValue={servicio?.sena_monto ?? 0}
-            className={inputCls + ' tnum'}
-          />
-        </label>
+        {cobraSena ? (
+          <label className="block">
+            <span className={labelCls}>Seña</span>
+            <input
+              name="sena_monto"
+              type="number"
+              min={0}
+              step={500}
+              defaultValue={servicio?.sena_monto ?? 0}
+              className={inputCls + ' tnum'}
+            />
+          </label>
+        ) : (
+          <input type="hidden" name="sena_monto" value={0} />
+        )}
         <label className="block">
           <span className={labelCls}>Duración (min)</span>
           <input

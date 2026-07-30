@@ -5,8 +5,10 @@ import {
   cancelarTurno,
   completarTurno,
   confirmarSena,
+  confirmarSinSena,
   marcarAusente,
 } from '@/app/(app)/agenda/actions';
+import { SENA_MODO_DEFAULT, permiteConfirmarSinSena, type SenaModo } from '@/lib/sena';
 import type { AgendaState, Estado } from '@/lib/turno';
 
 type Action = (prev: AgendaState, formData: FormData) => Promise<AgendaState>;
@@ -51,7 +53,15 @@ function Boton({
  * Acciones de estado directo desde la lista, sin entrar al detalle.
  * Cancelar y ausente piden confirmación inline (dos pasos, sin diálogos del navegador).
  */
-export function TurnoAccionesRapidas({ id, estado }: { id: string; estado: Estado }) {
+export function TurnoAccionesRapidas({
+  id,
+  estado,
+  senaModo = SENA_MODO_DEFAULT,
+}: {
+  id: string;
+  estado: Estado;
+  senaModo?: SenaModo;
+}) {
   const [confirmando, setConfirmando] = useState<'cancelar' | 'ausente' | null>(null);
 
   if (estado !== 'pendiente_sena' && estado !== 'confirmado') return null;
@@ -76,9 +86,16 @@ export function TurnoAccionesRapidas({ id, estado }: { id: string; estado: Estad
   return (
     <div className="flex flex-wrap items-center gap-2">
       {estado === 'pendiente_sena' ? (
-        <Boton action={confirmarSena} id={id} className={PRIMARIO}>
-          Seña cobrada
-        </Boton>
+        <>
+          <Boton action={confirmarSena} id={id} className={PRIMARIO}>
+            Seña cobrada
+          </Boton>
+          {permiteConfirmarSinSena(senaModo) && (
+            <Boton action={confirmarSinSena} id={id} className={GHOST}>
+              Confirmar sin seña
+            </Boton>
+          )}
+        </>
       ) : (
         <>
           <Boton action={completarTurno} id={id} className={PRIMARIO}>

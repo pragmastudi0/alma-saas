@@ -13,7 +13,14 @@ import { registrarIngresoTurno, nombrePaciente } from '@/lib/caja';
 import { calcularSlots } from '@/lib/slots';
 import { diaSemanaDe } from '@/lib/fecha';
 import { syncToCalendar } from '@/lib/calendar-sync';
+import { estadoInicial, montoSenaEfectivo, permiteConfirmarSinSena, senaModoDe, type SenaModo } from '@/lib/sena';
 import type { AgendaState, Estado, MpLinkState, HorariosDia, TurnoOcupado } from '@/lib/turno';
+
+/** Modo de cobro de seña del tenant (vive en el jsonb settings). */
+async function senaModoDelTenant(supabase: SupabaseClient): Promise<SenaModo> {
+  const { data } = await supabase.from('alma_tenants').select('settings').maybeSingle();
+  return senaModoDe(data?.settings);
+}
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const HORA = /^\d{2}:\d{2}$/;
@@ -99,8 +106,11 @@ export async function crearTurno(_prev: AgendaState, formData: FormData): Promis
     patientId = nuevo.id;
   }
 
-  // Con seña nace pendiente_sena; sin seña, confirmado.
-  const estado: Estado = v.sena_monto > 0 ? 'pendiente_sena' : 'confirmado';
+  // Con seña nace pendiente_sena; sin seña, confirmado. Si el profesional no
+  // cobra seña, el monto se normaliza a cero aunque venga algo en el form.
+  const modo = await senaModoDelTenant(supabase);
+  const senaMonto = montoSenaEfectivo(v.sena_monto, modo);
+  const estado: Estado = estadoInicial(senaMonto, modo);
 
   const { data: nuevo, error } = await supabase
     .from('alma_appointments')
@@ -111,7 +121,7 @@ export async function crearTurno(_prev: AgendaState, formData: FormData): Promis
       hora: v.hora,
       duracion_min: v.duracion_min,
       precio: v.precio,
-      sena_monto: v.sena_monto,
+      sena_monto: senaMonto,
       sena_pagada: false,
       estado,
       service_id: v.service_id || null,
@@ -165,6 +175,7 @@ export async function editarTurno(_prev: AgendaState, formData: FormData): Promi
   const v = parsed.data;
 
   const supabase = await createServerSupabase();
+  const modo = await senaModoDelTenant(supabase);
   const { data, error } = await supabase
     .from('alma_appointments')
     .update({
@@ -172,7 +183,7 @@ export async function editarTurno(_prev: AgendaState, formData: FormData): Promi
       hora: v.hora,
       duracion_min: v.duracion_min,
       precio: v.precio,
-      sena_monto: v.sena_monto,
+      sena_monto: montoSenaEfectivo(v.sena_monto, modo),
       service_id: v.service_id || null,
       employee_id: v.employee_id || null,
       // El link de seña vigente puede quedar desactualizado (monto/fecha): se regenera.
@@ -299,6 +310,36 @@ export async function confirmarSena(_prev: AgendaState, formData: FormData): Pro
       });
     },
   );
+}
+
+/**
+ * pendiente_sena → confirmado sin cobrar la seña. Solo si el profesional
+ * configuró la seña como opcional (o no cobra seña).
+ *
+ * La seña va a cero a propósito: no se asienta nada en caja ahora y, al
+ * completar el turno, `completarTurno` registra el precio completo. Si se
+ * guardara el monto sin cobrar, esa plata no quedaría asentada en ningún lado.
+ * También se anula el link de MP: ese cobro ya no corresponde.
+ */
+export async function confirmarSinSena(
+  _prev: AgendaState,
+  formData: FormData,
+): Promise<AgendaState> {
+  const supabase = await createServerSupabase();
+  const modo = await senaModoDelTenant(supabase);
+  if (!permiteConfirmarSinSena(modo)) {
+    return {
+      error: 'Tenés la seña como obligatoria. Cambialo en Ajustes si querés confirmar sin cobrarla.',
+    };
+  }
+
+  return transicionar(formData, ['pendiente_sena'], {
+    estado: 'confirmado',
+    sena_monto: 0,
+    sena_pagada: false,
+    mp_preference_id: null,
+    mp_init_point: null,
+  });
 }
 
 /** confirmado → completado. Asienta en caja el saldo del turno (precio − seña). */

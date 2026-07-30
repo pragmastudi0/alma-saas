@@ -11,6 +11,7 @@ import { INACTIVIDAD_DIAS_DEFAULT } from '@/lib/inactivos';
 import { PLANTILLA_CANCELACION_DEFAULT } from '@/lib/whatsapp';
 import { siteUrl } from '@/lib/mp';
 import { slugificar } from '@/lib/slug';
+import { senaModoDe } from '@/lib/sena';
 import {
   guardarAjustes,
   guardarDisponibilidad,
@@ -23,6 +24,7 @@ import {
 
 type Settings = {
   precio_default?: number;
+  sena_modo?: string;
   sena_default?: number;
   duracion_default?: number;
   inactividad_dias?: number;
@@ -73,6 +75,7 @@ export default async function AjustesPage({
   }
 
   const s = (tenant?.settings ?? {}) as Settings;
+  const senaModo = senaModoDe(s);
   const aviso = mp ? MENSAJES_MP[mp] : undefined;
 
   // Postgres devuelve time como 'HH:MM:SS'; los inputs time esperan 'HH:MM'.
@@ -121,6 +124,7 @@ export default async function AjustesPage({
           nombre: tenant?.nombre ?? '',
           profesion: tenant?.profesion ?? '',
           precio_default: s.precio_default ?? 0,
+          sena_modo: senaModo,
           sena_default: s.sena_default ?? 0,
           duracion_default: s.duracion_default ?? 45,
           inactividad_dias: s.inactividad_dias ?? INACTIVIDAD_DIAS_DEFAULT,
@@ -151,6 +155,7 @@ export default async function AjustesPage({
           servicios={servicios ?? []}
           empleados={empleados ?? []}
           empleadosPorServicio={empPorServicio}
+          cobraSena={senaModo !== 'no'}
           onGuardar={guardarServicio}
           onToggle={toggleServicio}
           onToggleEmpleado={toggleEmpleadoServicio}

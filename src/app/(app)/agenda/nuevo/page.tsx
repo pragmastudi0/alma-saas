@@ -3,6 +3,7 @@ import { TurnoForm } from '@/components/turno-form';
 import { BackLink } from '@/components/back-link';
 import { crearTurno, horariosDelDia } from '../actions';
 import { hoyISO } from '@/lib/fecha';
+import { montoSenaEfectivo, senaModoDe } from '@/lib/sena';
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -64,6 +65,7 @@ export default async function NuevoTurnoPage({
   }
 
   const s = (tenant?.settings ?? {}) as Settings;
+  const senaModo = senaModoDe(s);
   const duracion = s.duracion_default ?? 45;
   const horariosIniciales = await horariosDelDia(dia, duracion);
 
@@ -72,7 +74,7 @@ export default async function NuevoTurnoPage({
   const employeeId = emp && UUID.test(emp) ? emp : undefined;
   const origenId = origen && UUID.test(origen) ? origen : undefined;
   const precioPrefill = montoParam(precio) ?? s.precio_default ?? 0;
-  const senaPrefill = montoParam(sena) ?? s.sena_default ?? 0;
+  const senaPrefill = montoSenaEfectivo(montoParam(sena) ?? s.sena_default ?? 0, senaModo);
 
   return (
     <main className="pb-10">
@@ -90,6 +92,7 @@ export default async function NuevoTurnoPage({
         empleados={empleados ?? []}
         empleadosPorServicio={empPorServicio}
         horariosIniciales={horariosIniciales}
+        senaModo={senaModo}
         defaults={{
           fecha: dia,
           hora: '09:00',

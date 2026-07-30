@@ -1,13 +1,15 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { inputCls, labelCls } from '@/components/ui/field';
 import type { AjustesState } from '@/lib/ajustes';
+import type { SenaModo } from '@/lib/sena';
 
 type Defaults = {
   nombre: string;
   profesion: string;
   precio_default: number;
+  sena_modo: SenaModo;
   sena_default: number;
   duracion_default: number;
   inactividad_dias: number;
@@ -24,6 +26,8 @@ export function AjustesForm({
   defaults: Defaults;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
+  const [senaModo, setSenaModo] = useState<SenaModo>(defaults.sena_modo);
+  const cobraSena = senaModo !== 'no';
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -60,7 +64,50 @@ export function AjustesForm({
               />
             </label>
             <label className="block flex-1">
-              <span className={labelCls}>Seña</span>
+              <span className={labelCls}>Duración (minutos)</span>
+              <input
+                name="duracion_default"
+                type="number"
+                min={5}
+                step={5}
+                required
+                defaultValue={defaults.duracion_default}
+                className={inputCls + ' tnum'}
+              />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-[var(--alma-border)] pt-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[.08em] text-[var(--alma-text-muted)]">
+          Seña
+        </p>
+        <div className="flex flex-col gap-4">
+          <label className="block">
+            <span className={labelCls}>¿Cobrás seña?</span>
+            <select
+              name="sena_modo"
+              value={senaModo}
+              onChange={(e) => setSenaModo(e.target.value as SenaModo)}
+              className={inputCls}
+            >
+              <option value="obligatoria">Sí, y es obligatoria</option>
+              <option value="opcional">Sí, pero es opcional</option>
+              <option value="no">No cobro seña</option>
+            </select>
+            <span className="mt-1.5 block text-xs text-[var(--alma-text-muted)]">
+              {senaModo === 'obligatoria'
+                ? 'El turno queda a la espera hasta que la seña esté paga.'
+                : senaModo === 'opcional'
+                  ? 'Podés pedir la seña, pero también confirmar el turno sin cobrarla. Tus pacientes eligen si la pagan al reservar.'
+                  : 'Los turnos nacen confirmados y no vas a ver campos de seña en ningún lado.'}
+            </span>
+          </label>
+
+          {cobraSena && (
+            <label className="block">
+              <span className={labelCls}>Monto de la seña</span>
               <input
                 name="sena_default"
                 type="number"
@@ -70,19 +117,7 @@ export function AjustesForm({
                 className={inputCls + ' tnum'}
               />
             </label>
-          </div>
-          <label className="block">
-            <span className={labelCls}>Duración (minutos)</span>
-            <input
-              name="duracion_default"
-              type="number"
-              min={5}
-              step={5}
-              required
-              defaultValue={defaults.duracion_default}
-              className={inputCls + ' tnum'}
-            />
-          </label>
+          )}
         </div>
       </div>
 
@@ -119,18 +154,22 @@ export function AjustesForm({
         </span>
       </label>
 
-      <label className="block border-t border-[var(--alma-border)] pt-4">
-        <span className={labelCls}>Alias para transferencias</span>
-        <input
-          name="alias_mp"
-          defaultValue={defaults.alias_mp}
-          placeholder="tu.alias.mp"
-          className={inputCls}
-        />
-        <span className="mt-1.5 block text-xs text-[var(--alma-text-muted)]">
-          Si no conectás Mercado Pago, la seña se pide por transferencia a este alias.
-        </span>
-      </label>
+      {cobraSena ? (
+        <label className="block border-t border-[var(--alma-border)] pt-4">
+          <span className={labelCls}>Alias para transferencias</span>
+          <input
+            name="alias_mp"
+            defaultValue={defaults.alias_mp}
+            placeholder="tu.alias.mp"
+            className={inputCls}
+          />
+          <span className="mt-1.5 block text-xs text-[var(--alma-text-muted)]">
+            Si no conectás Mercado Pago, la seña se pide por transferencia a este alias.
+          </span>
+        </label>
+      ) : (
+        <input type="hidden" name="alias_mp" value={defaults.alias_mp} />
+      )}
 
       <label className="block border-t border-[var(--alma-border)] pt-4">
         <span className={labelCls}>Tu link de reservas</span>

@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 import { inputCls, labelCls } from '@/components/ui/field';
 import { horariosDelDia } from '@/app/(app)/agenda/actions';
+import { SENA_MODO_DEFAULT, type SenaModo } from '@/lib/sena';
 import type { AgendaState, HorariosDia, TurnoOcupado } from '@/lib/turno';
 
 type Paciente = { id: string; nombre: string };
@@ -94,6 +95,7 @@ export function TurnoForm({
   servicios,
   empleados,
   empleadosPorServicio,
+  senaModo = SENA_MODO_DEFAULT,
 }: {
   action: (prev: AgendaState, formData: FormData) => Promise<AgendaState>;
   submitLabel: string;
@@ -106,7 +108,10 @@ export function TurnoForm({
   servicios?: Servicio[];
   empleados?: Empleado[];
   empleadosPorServicio?: Record<string, string[]>;
+  /** Modo de cobro de seña del profesional (Ajustes). */
+  senaModo?: SenaModo;
 }) {
+  const cobraSena = senaModo !== 'no';
   const [state, formAction, pending] = useActionState(action, {});
   const [nuevo, setNuevo] = useState(pacientes?.length === 0);
 
@@ -290,23 +295,31 @@ export function TurnoForm({
             className={inputCls + ' tnum'}
           />
         </label>
-        <label className="block">
-          <span className={labelCls}>Seña</span>
-          <input
-            name="sena_monto"
-            type="number"
-            min={0}
-            step={500}
-            value={senaMonto}
-            onChange={(e) => setSenaMonto(e.target.value)}
-            className={inputCls + ' tnum'}
-          />
-        </label>
+        {cobraSena ? (
+          <label className="block">
+            <span className={labelCls}>Seña</span>
+            <input
+              name="sena_monto"
+              type="number"
+              min={0}
+              step={500}
+              value={senaMonto}
+              onChange={(e) => setSenaMonto(e.target.value)}
+              className={inputCls + ' tnum'}
+            />
+          </label>
+        ) : (
+          <input type="hidden" name="sena_monto" value={0} />
+        )}
       </div>
 
-      <p className="text-xs text-[var(--alma-text-muted)]">
-        Con seña, el turno queda a la espera de la seña. Sin seña, nace confirmado.
-      </p>
+      {cobraSena && (
+        <p className="text-xs text-[var(--alma-text-muted)]">
+          {senaModo === 'opcional'
+            ? 'Con seña, el turno queda a la espera. Como la tenés en opcional, podés confirmarlo sin cobrarla.'
+            : 'Con seña, el turno queda a la espera de la seña. Sin seña, nace confirmado.'}
+        </p>
+      )}
 
       {state.error && (
         <p role="alert" className="text-sm text-[var(--error-600)]">
