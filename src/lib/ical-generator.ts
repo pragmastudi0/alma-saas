@@ -3,7 +3,8 @@
  * Convierte turnos de alma en un formato compatible con Apple Calendar, Google Calendar, Outlook, etc.
  */
 
-import { formatISO, format } from 'date-fns';
+import { format } from 'date-fns';
+import { addDias } from '@/lib/fecha';
 
 export interface CalendarEvent {
   id: string;
@@ -38,16 +39,31 @@ function toICalDateTime(fecha: string, hora: string): string {
   return `${year}${month}${day}T${hours}${minutes}00`;
 }
 
+const MINUTOS_POR_DIA = 24 * 60;
+
 /**
- * Calcula la hora de fin basado en hora inicio + duración
+ * Fin del evento como par fecha + hora: un turno puede cruzar la medianoche.
+ * La hora 24 no existe en RFC 5545, así que el día tiene que avanzar en vez de
+ * seguir sumando horas (un turno 23:30 de 60 min termina 00:30 del día siguiente).
  */
-function calculateEndTime(hora: string, duracionMin: number): string {
+function finDelEvento(
+  fecha: string,
+  hora: string,
+  duracionMin: number,
+): { fecha: string; hora: string } {
   const [hours, minutes] = hora.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes + duracionMin;
-  const endHours = Math.floor(totalMinutes / 60);
-  const endMinutes = totalMinutes % 60;
 
-  return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+  const dias = Math.floor(totalMinutes / MINUTOS_POR_DIA);
+  const minutosDelDia = ((totalMinutes % MINUTOS_POR_DIA) + MINUTOS_POR_DIA) % MINUTOS_POR_DIA;
+  const endHours = Math.floor(minutosDelDia / 60);
+  const endMinutes = minutosDelDia % 60;
+
+  return {
+    // addDias hace la aritmética por componentes: no deriva de día por DST.
+    fecha: dias === 0 ? fecha : addDias(fecha, dias),
+    hora: `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`,
+  };
 }
 
 /**
@@ -68,8 +84,8 @@ function escapeICalText(text: string | undefined): string {
 function generateICalEvent(event: CalendarEvent): string {
   const uid = generateUID(event.id);
   const dtstart = toICalDateTime(event.fecha, event.hora);
-  const endTime = calculateEndTime(event.hora, event.duracion_min);
-  const dtend = toICalDateTime(event.fecha, endTime);
+  const fin = finDelEvento(event.fecha, event.hora, event.duracion_min);
+  const dtend = toICalDateTime(fin.fecha, fin.hora);
   const dtstamp = format(new Date(), "yyyyMMdd'T'HHmmss'Z'");
   const lastModified = format(event.updated_at, "yyyyMMdd'T'HHmmss'Z'");
 
