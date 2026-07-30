@@ -8,6 +8,7 @@ import { createAdminSupabase } from '@/lib/supabase/admin';
 import { getSessionContext } from '@/lib/tenant';
 import { desconectarCuentaMp } from '@/lib/mp-oauth';
 import type { AjustesState } from '@/lib/ajustes';
+import { SENA_MODO_DEFAULT, montoSenaEfectivo } from '@/lib/sena';
 import { INACTIVIDAD_DIAS_DEFAULT } from '@/lib/inactivos';
 import type { DisponibilidadDia, DisponibilidadState } from '@/lib/disponibilidad';
 import { SLUG_RE } from '@/lib/slug';
@@ -16,6 +17,7 @@ const ajustesSchema = z.object({
   nombre: z.string().trim().min(1, 'Contanos cómo te llamás.').max(80),
   profesion: z.string().trim().max(60).default(''),
   precio_default: z.coerce.number().min(0, 'El precio no puede ser negativo.').default(0),
+  sena_modo: z.enum(['no', 'opcional', 'obligatoria']).default(SENA_MODO_DEFAULT),
   sena_default: z.coerce.number().min(0, 'La seña no puede ser negativa.').default(0),
   duracion_default: z.coerce.number().int().positive('La duración tiene que ser mayor a cero.'),
   inactividad_dias: z.coerce
@@ -67,7 +69,9 @@ export async function guardarAjustes(
   const settings = {
     ...((actual?.settings as Record<string, unknown>) ?? {}),
     precio_default: v.precio_default,
-    sena_default: v.sena_default,
+    sena_modo: v.sena_modo,
+    // Si no cobra seña, el default va a cero: nada de montos colgados.
+    sena_default: montoSenaEfectivo(v.sena_default, v.sena_modo),
     duracion_default: v.duracion_default,
     inactividad_dias: v.inactividad_dias,
     plantilla_cancelacion: v.plantilla_cancelacion || null,

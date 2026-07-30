@@ -9,6 +9,7 @@ import { Fab, AccionNueva } from '@/components/fab';
 import { nombrePaciente } from '@/lib/caja';
 import { etiquetaDia, hoyISO } from '@/lib/fecha';
 import { pesos } from '@/lib/format';
+import { senaModoDe } from '@/lib/sena';
 
 export default async function HoyPage() {
   const ctx = await getSessionContext();
@@ -16,7 +17,7 @@ export default async function HoyPage() {
 
   const dia = hoyISO();
   const supabase = await createServerSupabase();
-  const [{ data }, { data: caja }, { data: futuros }] = await Promise.all([
+  const [{ data }, { data: caja }, { data: futuros }, { data: tenant }] = await Promise.all([
     supabase
       .from('alma_appointments')
       .select('id, hora, duracion_min, precio, estado, alma_patients(nombre, apellido), alma_employees(nombre)')
@@ -31,7 +32,10 @@ export default async function HoyPage() {
       .order('fecha', { ascending: true })
       .order('hora', { ascending: true })
       .limit(6),
+    supabase.from('alma_tenants').select('settings').maybeSingle(),
   ]);
+
+  const senaModo = senaModoDe(tenant?.settings);
 
   const ingresosHoy = (caja ?? [])
     .filter((c) => c.tipo === 'ingreso')
@@ -140,7 +144,7 @@ export default async function HoyPage() {
           <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {turnos.map((t) => (
               <li key={t.id}>
-                <TurnoCard t={t} />
+                <TurnoCard t={t} senaModo={senaModo} />
               </li>
             ))}
           </ul>

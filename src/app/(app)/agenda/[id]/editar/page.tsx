@@ -4,12 +4,13 @@ import { TurnoForm } from '@/components/turno-form';
 import { BackLink } from '@/components/back-link';
 import { editarTurno } from '../../actions';
 import { horaCorta } from '@/lib/format';
+import { senaModoDe } from '@/lib/sena';
 
 export default async function EditarTurnoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const supabase = await createServerSupabase();
-  const [{ data }, { data: servicios }, { data: empleados }, { data: svcEmps }] = await Promise.all([
+  const [{ data }, { data: servicios }, { data: empleados }, { data: svcEmps }, { data: tenant }] = await Promise.all([
     supabase
       .from('alma_appointments')
       .select('id, fecha, hora, duracion_min, precio, sena_monto, service_id, employee_id')
@@ -28,6 +29,7 @@ export default async function EditarTurnoPage({ params }: { params: Promise<{ id
     supabase
       .from('alma_service_employees')
       .select('service_id, employee_id'),
+    supabase.from('alma_tenants').select('settings').maybeSingle(),
   ]);
 
   if (!data) notFound();
@@ -52,6 +54,7 @@ export default async function EditarTurnoPage({ params }: { params: Promise<{ id
         servicios={servicios ?? []}
         empleados={empleados ?? []}
         empleadosPorServicio={empPorServicio}
+        senaModo={senaModoDe(tenant?.settings)}
         defaults={{
           fecha: data.fecha,
           hora: horaCorta(data.hora),

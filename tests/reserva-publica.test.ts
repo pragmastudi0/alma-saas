@@ -35,6 +35,7 @@ let tenantId = '';
 // Una semana adelante (dentro de la ventana de 60 días); misma semana siguiente.
 const FECHA = addDias(hoyISO(TZ_DEFAULT), 7);
 const FECHA_2 = addDias(hoyISO(TZ_DEFAULT), 14);
+const FECHA_3 = addDias(hoyISO(TZ_DEFAULT), 21);
 
 const SETTINGS = { precio_default: 15000, sena_default: 5000, duracion_default: 60 };
 
@@ -76,7 +77,7 @@ beforeAll(async () => {
   if (bootErr || !tid) throw bootErr ?? new Error('bootstrap sin tenant');
   tenantId = tid;
 
-  // Atiende 09:00–13:00 el día de semana de FECHA (y FECHA_2, que cae igual).
+  // Atiende 09:00–13:00 el día de semana de FECHA (FECHA_2 y FECHA_3 caen igual).
   const { error: dispErr } = await admin.from('alma_availability').insert({
     tenant_id: tenantId,
     dia_semana: diaSemanaDe(FECHA),
@@ -178,6 +179,95 @@ describe('reserva pública', () => {
     if (!r.ok) return;
     expect(r.estado).toBe('confirmado');
     expect(r.senaMonto).toBe(0);
+  });
+
+  // Los tres casos usan FECHA_2 (misma disponibilidad, semana siguiente) y
+  // dejan libre el 09:00, que el test del tope necesita para llegar al límite.
+  it('seña opcional: si el paciente no la paga, el turno nace confirmado y sin seña', async () => {
+    const r = await crearReservaPublica(
+      admin,
+      datos({
+        fecha: FECHA_2,
+        hora: '10:00',
+        telefono: '11 7777 1001',
+        nombre: 'Opcional Sin Pago',
+        settings: { ...SETTINGS, sena_modo: 'opcional' },
+        pagarSena: false,
+      }),
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.estado).toBe('confirmado');
+    expect(r.senaMonto).toBe(0);
+
+    const { data: t } = await admin
+      .from('alma_appointments')
+      .select('estado, sena_monto')
+      .eq('id', r.turnoId)
+      .single();
+    expect(t?.estado).toBe('confirmado');
+    expect(Number(t?.sena_monto)).toBe(0);
+  });
+
+  it('seña opcional: si el paciente elige pagarla, queda pendiente_sena', async () => {
+    const r = await crearReservaPublica(
+      admin,
+      datos({
+        fecha: FECHA_2,
+        hora: '11:00',
+        telefono: '11 7777 1002',
+        nombre: 'Opcional Con Pago',
+        settings: { ...SETTINGS, sena_modo: 'opcional' },
+        pagarSena: true,
+      }),
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.estado).toBe('pendiente_sena');
+    expect(r.senaMonto).toBe(5000);
+  });
+
+  it('sin cobro de seña el turno nace confirmado aunque haya monto configurado', async () => {
+    const r = await crearReservaPublica(
+      admin,
+      datos({
+        fecha: FECHA_2,
+        hora: '12:00',
+        telefono: '11 7777 1003',
+        nombre: 'No Cobra Sena',
+        settings: { ...SETTINGS, sena_modo: 'no' },
+      }),
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.estado).toBe('confirmado');
+    expect(r.senaMonto).toBe(0);
+
+    const { data: t } = await admin
+      .from('alma_appointments')
+      .select('sena_monto')
+      .eq('id', r.turnoId)
+      .single();
+    expect(Number(t?.sena_monto)).toBe(0);
+  });
+
+  it('seña obligatoria: saltearla no es opción, queda pendiente_sena', async () => {
+    const r = await crearReservaPublica(
+      admin,
+      datos({
+        fecha: FECHA_3,
+        hora: '09:00',
+        telefono: '11 7777 1004',
+        nombre: 'Obligatoria',
+        settings: { ...SETTINGS, sena_modo: 'obligatoria' },
+        // Aunque el form diga que no la paga, con la seña obligatoria no hay salida.
+        pagarSena: false,
+      }),
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.estado).toBe('pendiente_sena');
+    expect(r.senaMonto).toBe(5000);
   });
 
   it('tope de turnos futuros por paciente', async () => {

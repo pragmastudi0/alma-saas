@@ -6,11 +6,13 @@ import {
   cancelarTurno,
   completarTurno,
   confirmarSena,
+  confirmarSinSena,
   marcarAusente,
 } from '@/app/(app)/agenda/actions';
 import { SenaLinkBoton, type CobroSena, type WaCtx } from '@/components/sena-link-boton';
 import { WhatsAppLink } from '@/components/whatsapp-link';
 import { mensajeCancelacion, mensajeRecordatorio, waLink } from '@/lib/whatsapp';
+import { SENA_MODO_DEFAULT, permiteConfirmarSinSena, type SenaModo } from '@/lib/sena';
 import type { AgendaState, Estado } from '@/lib/turno';
 
 type Action = (prev: AgendaState, formData: FormData) => Promise<AgendaState>;
@@ -120,6 +122,7 @@ export function EstadoAcciones({
   cobro,
   plantillaCancel = '',
   reprogramarHref,
+  senaModo = SENA_MODO_DEFAULT,
 }: {
   id: string;
   estado: Estado;
@@ -127,6 +130,7 @@ export function EstadoAcciones({
   cobro: CobroSena;
   plantillaCancel?: string;
   reprogramarHref?: string;
+  senaModo?: SenaModo;
 }) {
   if (estado === 'pendiente_sena') {
     return (
@@ -135,6 +139,13 @@ export function EstadoAcciones({
         <Accion action={confirmarSena} id={id} variant="primary">
           Marcar seña cobrada
         </Accion>
+        {/* Con la seña opcional, se puede confirmar sin cobrarla: la seña
+            queda en cero y el precio completo se asienta al completar. */}
+        {permiteConfirmarSinSena(senaModo) && (
+          <Accion action={confirmarSinSena} id={id} variant="ghost">
+            Confirmar sin cobrar la seña
+          </Accion>
+        )}
         <Cancelar id={id} wa={wa} plantillaCancel={plantillaCancel} />
       </div>
     );

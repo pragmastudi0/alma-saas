@@ -24,6 +24,8 @@ const reservaSchema = z.object({
   fecha_nacimiento: z.string().regex(FECHA, 'Poné tu fecha de nacimiento.'),
   service_id: z.string().uuid().optional().or(z.literal('')),
   employee_id: z.string().uuid().optional().or(z.literal('')),
+  // Con la seña opcional, qué botón apretó el paciente ('1' = pagar ahora).
+  pagar_sena: z.string().optional(),
 });
 
 const MENSAJES: Record<string, string> = {
@@ -104,6 +106,9 @@ export async function reservarTurno(
     fechaNacimiento: v.fecha_nacimiento,
     serviceId: v.service_id || undefined,
     employeeId: v.employee_id || undefined,
+    // Solo el botón "Reservar sin seña" manda '0'. Si el campo no llegara,
+    // se asume que la paga: nunca saltear la seña por un dato ausente.
+    pagarSena: v.pagar_sena !== '0',
   });
 
   if (!resultado.ok) {

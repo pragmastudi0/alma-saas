@@ -8,6 +8,7 @@ import { BackLink } from '@/components/back-link';
 import { nombrePaciente } from '@/lib/caja';
 import { horaCorta, pesos } from '@/lib/format';
 import { etiquetaDia } from '@/lib/fecha';
+import { senaModoDe } from '@/lib/sena';
 import type { Estado } from '@/lib/turno';
 
 function Dato({ label, children }: { label: string; children: React.ReactNode }) {
@@ -51,6 +52,7 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
     alias_mp?: string | null;
     plantilla_cancelacion?: string | null;
   } | null;
+  const senaModo = senaModoDe(tenant?.settings);
 
   // Cómo cobra la seña este profesional: MP conectado > alias > nada.
   const alias = (settings?.alias_mp ?? '').trim();
@@ -113,18 +115,20 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
           <Dato label="Precio">
             <span className="tnum">{pesos(Number(data.precio))}</span>
           </Dato>
-          <Dato label="Seña">
-            {sena > 0 ? (
-              <>
-                <span className="tnum">{pesos(sena)}</span>{' '}
-                <span className="text-[var(--alma-text-muted)]">
-                  {data.sena_pagada ? '· cobrada' : '· pendiente'}
-                </span>
-              </>
-            ) : (
-              'Sin seña'
-            )}
-          </Dato>
+          {senaModo !== 'no' && (
+            <Dato label="Seña">
+              {sena > 0 ? (
+                <>
+                  <span className="tnum">{pesos(sena)}</span>{' '}
+                  <span className="text-[var(--alma-text-muted)]">
+                    {data.sena_pagada ? '· cobrada' : '· pendiente'}
+                  </span>
+                </>
+              ) : (
+                'Sin seña'
+              )}
+            </Dato>
+          )}
           {(() => {
             const svc = data.alma_services as { nombre?: string } | null;
             return svc?.nombre ? <Dato label="Servicio">{svc.nombre}</Dato> : null;
@@ -143,6 +147,7 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
           cobro={cobro}
           plantillaCancel={settings?.plantilla_cancelacion ?? ''}
           reprogramarHref={reprogramarHref}
+          senaModo={senaModo}
           wa={{
             telefono: pac?.telefono ?? '',
             nombre: pac?.nombre ?? 'Paciente',

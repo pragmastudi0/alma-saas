@@ -3,6 +3,7 @@ import { EstadoBadge } from '@/components/estado-badge';
 import { IconoChevron } from '@/components/icons';
 import { TurnoAccionesRapidas } from '@/components/turno-acciones-rapidas';
 import { horaCorta, pesos } from '@/lib/format';
+import { SENA_MODO_DEFAULT, type SenaModo } from '@/lib/sena';
 import type { Estado } from '@/lib/turno';
 
 export type TurnoCardData = {
@@ -15,7 +16,15 @@ export type TurnoCardData = {
   empleado?: string;
 };
 
-export function TurnoCard({ t, conAcciones = true }: { t: TurnoCardData; conAcciones?: boolean }) {
+export function TurnoCard({
+  t,
+  conAcciones = true,
+  senaModo = SENA_MODO_DEFAULT,
+}: {
+  t: TurnoCardData;
+  conAcciones?: boolean;
+  senaModo?: SenaModo;
+}) {
   return (
     <div className="rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] transition-colors duration-micro ease-alma hover:border-[var(--alma-text-muted)]">
       <Link href={`/agenda/${t.id}`} className="flex items-center gap-3 p-3.5">
@@ -33,7 +42,7 @@ export function TurnoCard({ t, conAcciones = true }: { t: TurnoCardData; conAcci
       </Link>
       {conAcciones && (t.estado === 'pendiente_sena' || t.estado === 'confirmado') && (
         <div className="border-t border-[var(--alma-border)] px-3.5 py-2.5">
-          <TurnoAccionesRapidas id={t.id} estado={t.estado} />
+          <TurnoAccionesRapidas id={t.id} estado={t.estado} senaModo={senaModo} />
         </div>
       )}
     </div>

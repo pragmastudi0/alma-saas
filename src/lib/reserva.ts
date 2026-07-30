@@ -6,6 +6,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { addDias, hoyISO } from '@/lib/fecha';
+import { estadoInicial, montoSenaEfectivo, senaModoDe } from '@/lib/sena';
 import { slotsDelDia } from '@/lib/slots';
 import { normalizarTelAR } from '@/lib/whatsapp';
 
@@ -17,7 +18,17 @@ export const MAX_TURNOS_FUTUROS = 3;
 export type DatosReserva = {
   tenantId: string;
   timezone: string;
-  settings: { precio_default?: number; sena_default?: number; duracion_default?: number };
+  settings: {
+    precio_default?: number;
+    sena_default?: number;
+    duracion_default?: number;
+    sena_modo?: string;
+  };
+  /**
+   * Con la seña opcional, si el paciente eligió pagarla ahora. Cuando dice que
+   * no, el turno nace confirmado y sin seña. Se ignora si la seña es obligatoria.
+   */
+  pagarSena?: boolean;
   fecha: string; // ya validada con regex
   hora: string; // 'HH:MM'
   nombre: string;
@@ -138,8 +149,13 @@ export async function crearReservaPublica(
   }
 
   const precioFinal = servicio ? Number(servicio.precio) : (datos.settings.precio_default ?? 0);
-  const senaMonto = servicio ? Number(servicio.sena_monto) : (datos.settings.sena_default ?? 0);
-  const estado = senaMonto > 0 ? 'pendiente_sena' : 'confirmado';
+  const modo = senaModoDe(datos.settings);
+  const senaPedida = servicio ? Number(servicio.sena_monto) : (datos.settings.sena_default ?? 0);
+  // Con la seña opcional el paciente decide: si no la paga ahora, el turno
+  // queda confirmado y sin seña (el profesional cobra todo al atender).
+  const salteaSena = modo === 'opcional' && datos.pagarSena === false;
+  const senaMonto = salteaSena ? 0 : montoSenaEfectivo(senaPedida, modo);
+  const estado = estadoInicial(senaMonto, modo);
 
   const { data: turno, error: insErr } = await admin
     .from('alma_appointments')

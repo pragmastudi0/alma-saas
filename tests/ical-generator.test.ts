@@ -171,11 +171,15 @@ describe('iCal Generator', () => {
   });
 
   it('should calculate end time correctly for various durations', () => {
+    // Se compara el DTEND completo (fecha incluida): con solo la hora, un turno
+    // que cruza medianoche pasaría el test terminando el día anterior al inicio.
     const testCases = [
-      { hora: '14:30', duracion_min: 60, expected_end: '15:30' },
-      { hora: '14:30', duracion_min: 30, expected_end: '15:00' },
-      { hora: '14:30', duracion_min: 90, expected_end: '16:00' },
-      { hora: '23:30', duracion_min: 60, expected_end: '00:30' }, // Next day
+      { hora: '14:30', duracion_min: 60, expected_dtend: '20260729T153000' },
+      { hora: '14:30', duracion_min: 30, expected_dtend: '20260729T150000' },
+      { hora: '14:30', duracion_min: 90, expected_dtend: '20260729T160000' },
+      { hora: '23:30', duracion_min: 60, expected_dtend: '20260730T003000' }, // Next day
+      { hora: '23:00', duracion_min: 60, expected_dtend: '20260730T000000' }, // Justo medianoche
+      { hora: '10:00', duracion_min: 1500, expected_dtend: '20260730T110000' }, // Más de un día
     ];
 
     for (const testCase of testCases) {
@@ -192,8 +196,26 @@ describe('iCal Generator', () => {
       ];
 
       const ical = generateICalendar(events);
-      const expectedHourMin = testCase.expected_end.replace(':', '');
-      expect(ical).toContain(`T${expectedHourMin}00`);
+      expect(ical).toContain(`DTEND:${testCase.expected_dtend}`);
     }
+  });
+
+  it('should never emit an hour 24 in DTEND (invalid per RFC 5545)', () => {
+    const events: CalendarEvent[] = [
+      {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        fecha: '2026-07-29',
+        hora: '23:30',
+        duracion_min: 60,
+        paciente_nombre: 'Turno nocturno',
+        estado: 'confirmado',
+        updated_at: new Date(),
+      },
+    ];
+
+    const ical = generateICalendar(events);
+    expect(ical).toContain('DTSTART:20260729T233000');
+    expect(ical).toContain('DTEND:20260730T003000');
+    expect(ical).not.toContain('T24');
   });
 });

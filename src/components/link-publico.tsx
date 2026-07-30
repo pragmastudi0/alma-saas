@@ -18,8 +18,8 @@ export function LinkPublico({ url }: { url: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2 rounded-md bg-[var(--alma-surface-2)] p-2">
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center rounded-md bg-[var(--alma-surface-2)] p-3">
         <input
           readOnly
           value={url}
@@ -29,7 +29,7 @@ export function LinkPublico({ url }: { url: string }) {
         <button
           type="button"
           onClick={copiar}
-          className="shrink-0 rounded px-2.5 py-1 text-xs font-semibold text-[var(--alma-action)] transition-opacity duration-micro ease-alma hover:opacity-80"
+          className="shrink-0 rounded px-3 py-2 text-xs font-semibold text-[var(--alma-action)] transition-opacity duration-micro ease-alma hover:opacity-80 whitespace-nowrap"
         >
           {copiado ? 'Copiado' : 'Copiar'}
         </button>
@@ -38,7 +38,7 @@ export function LinkPublico({ url }: { url: string }) {
         href={waShareLink(`Reservá tu turno acá: ${url}`)}
         target="_blank"
         rel="noopener noreferrer"
-        className="rounded-md border border-[var(--alma-border)] px-4 py-3 text-center text-sm font-semibold text-[var(--alma-text-muted)] transition-colors duration-micro ease-alma hover:text-[var(--alma-text)]"
+        className="rounded-md border border-[var(--alma-border)] px-4 py-3 text-center text-sm font-semibold text-[var(--alma-text-muted)] transition-colors duration-micro ease-alma hover:text-[var(--alma-text)] w-full"
       >
         Compartir por WhatsApp
       </a>
