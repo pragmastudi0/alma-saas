@@ -215,6 +215,52 @@ export async function editarTurno(_prev: AgendaState, formData: FormData): Promi
   redirect(`/agenda/${v.id}`);
 }
 
+/**
+ * Borra el turno de la agenda, esté en el estado que esté (cancelado o no).
+ *
+ * Lo que ya se cobró queda asentado en la caja: el FK de `alma_cash_entries`
+ * es `on delete set null`, así que el movimiento sobrevive sin turno. La plata
+ * no se toca desde acá — si el profesional también la quiere borrar, lo hace
+ * desde Caja. Lo mismo con los pagos de MP (`alma_payments`), que se conservan
+ * para no romper la idempotencia del webhook.
+ */
+export async function eliminarTurno(_prev: AgendaState, formData: FormData): Promise<AgendaState> {
+  const ctx = await getSessionContext();
+  if (!ctx) redirect('/login');
+
+  const parsed = idSchema.safeParse({ id: formData.get('id') });
+  if (!parsed.success) {
+    return { error: 'Turno inválido.' };
+  }
+  const { id } = parsed.data;
+
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from('alma_appointments')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenantId)
+    .select('id, fecha');
+  if (error) {
+    return { error: 'No pudimos eliminar el turno.' };
+  }
+  if (!data?.length) {
+    return { error: 'No encontramos ese turno.' };
+  }
+
+  try {
+    await syncToCalendar('DELETE', id, ctx.tenantId);
+  } catch (err) {
+    console.error('[eliminarTurno] Calendar sync failed:', err);
+    // No rompemos el flujo: calendario es secundario
+  }
+
+  revalidatePath('/agenda');
+  revalidatePath('/hoy');
+  revalidatePath('/caja');
+  redirect(`/agenda?d=${data[0].fecha}`);
+}
+
 /** Fila del turno tras una transición, con el paciente para asentar la caja. */
 type TurnoTransicion = {
   id: string;

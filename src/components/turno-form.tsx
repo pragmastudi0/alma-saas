@@ -6,6 +6,7 @@ import { horariosDelDia } from '@/app/(app)/agenda/actions';
 import { SENA_MODO_DEFAULT, type SenaModo } from '@/lib/sena';
 import type { AgendaState, HorariosDia, TurnoOcupado } from '@/lib/turno';
 
+/** `nombre` ya viene armado con nombre y apellido, para poder diferenciarlos. */
 type Paciente = { id: string; nombre: string };
 
 type Servicio = { id: string; nombre: string; precio: number | string; duracion_min: number; sena_monto: number | string };

@@ -17,6 +17,7 @@ import {
   guardarDisponibilidad,
   guardarServicio,
   guardarEmpleado,
+  eliminarEmpleado,
   toggleServicio,
   toggleEmpleado,
   toggleEmpleadoServicio,
@@ -171,6 +172,7 @@ export default async function AjustesPage({
           empleados={empleados ?? []}
           onGuardar={guardarEmpleado}
           onToggle={toggleEmpleado}
+          onEliminar={eliminarEmpleado}
         />
       </section>
 

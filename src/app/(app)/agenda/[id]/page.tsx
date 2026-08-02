@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { EstadoBadge } from '@/components/estado-badge';
 import { EstadoAcciones } from '@/components/estado-acciones';
+import { EliminarTurnoBoton } from '@/components/eliminar-turno-boton';
 import type { CobroSena } from '@/components/sena-link-boton';
 import { BackLink } from '@/components/back-link';
 import { nombrePaciente } from '@/lib/caja';
@@ -24,7 +25,7 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
   const { id } = await params;
 
   const supabase = await createServerSupabase();
-  const [{ data }, { data: cuentaMp }, { data: tenant }] = await Promise.all([
+  const [{ data }, { data: cuentaMp }, { data: tenant }, { count: cobros }] = await Promise.all([
     supabase
       .from('alma_appointments')
       .select(
@@ -34,6 +35,11 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
       .maybeSingle(),
     supabase.from('alma_mp_accounts').select('tenant_id').maybeSingle(),
     supabase.from('alma_tenants').select('settings').maybeSingle(),
+    // Movimientos de caja de este turno: si los hay, avisamos antes de borrarlo.
+    supabase
+      .from('alma_cash_entries')
+      .select('id', { count: 'exact', head: true })
+      .eq('appointment_id', id),
   ]);
 
   if (!data) notFound();
@@ -185,13 +191,14 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
         </p>
       ) : null}
 
-      <div className="mt-5">
+      <div className="mt-5 flex items-start gap-5">
         <Link
           href={`/agenda/${data.id}/editar`}
           className="text-sm font-semibold text-[var(--alma-text-muted)] transition-colors duration-micro ease-alma hover:text-[var(--alma-text)]"
         >
           Editar turno
         </Link>
+        <EliminarTurnoBoton id={data.id} conCobros={(cobros ?? 0) > 0} />
       </div>
     </main>
   );
