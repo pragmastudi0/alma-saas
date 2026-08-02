@@ -10,7 +10,7 @@ export default async function EditarTurnoPage({ params }: { params: Promise<{ id
   const { id } = await params;
 
   const supabase = await createServerSupabase();
-  const [{ data }, { data: servicios }, { data: empleados }, { data: svcEmps }, { data: tenant }] = await Promise.all([
+  const [{ data, error }, { data: servicios }, { data: empleados }, { data: svcEmps }, { data: tenant }] = await Promise.all([
     supabase
       .from('alma_appointments')
       .select('id, fecha, hora, duracion_min, precio, sena_monto, service_id, employee_id')
@@ -32,6 +32,12 @@ export default async function EditarTurnoPage({ params }: { params: Promise<{ id
     supabase.from('alma_tenants').select('settings').maybeSingle(),
   ]);
 
+  // Distinguimos "no existe" de "la consulta falló": un 404 mentiroso esconde
+  // el problema real. Nunca logueamos datos del paciente.
+  if (error) {
+    console.error('[EditarTurno] No se pudo leer el turno:', error.message, error.code ?? '');
+    throw new Error('No pudimos abrir el turno.');
+  }
   if (!data) notFound();
 
   const empPorServicio: Record<string, string[]> = {};

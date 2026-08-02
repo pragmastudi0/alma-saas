@@ -24,11 +24,14 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
   const { id } = await params;
 
   const supabase = await createServerSupabase();
-  const [{ data }, { data: cuentaMp }, { data: tenant }] = await Promise.all([
+  // El turno se pide solo con sus columnas propias: los nombres de paciente,
+  // servicio y empleado van aparte. Si una relación falla (o el tenant todavía
+  // no tiene servicios), el turno igual se ve en vez de caer en un 404.
+  const [{ data, error }, { data: cuentaMp }, { data: tenant }] = await Promise.all([
     supabase
       .from('alma_appointments')
       .select(
-        'id, fecha, hora, duracion_min, precio, sena_monto, sena_pagada, estado, mp_init_point, patient_id, service_id, employee_id, reprogramado_a, alma_patients(nombre, apellido, telefono), alma_services(nombre), alma_employees(nombre)',
+        'id, fecha, hora, duracion_min, precio, sena_monto, sena_pagada, estado, mp_init_point, patient_id, service_id, employee_id, reprogramado_a',
       )
       .eq('id', id)
       .maybeSingle(),
@@ -36,15 +39,31 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
     supabase.from('alma_tenants').select('settings').maybeSingle(),
   ]);
 
+  // Una consulta que falla no es un turno inexistente: si mostráramos "Nada por
+  // acá" el problema quedaría invisible. Nunca logueamos datos del paciente.
+  if (error) {
+    console.error('[TurnoDetalle] No se pudo leer el turno:', error.message, error.code ?? '');
+    throw new Error('No pudimos abrir el turno.');
+  }
   if (!data) notFound();
 
-  const rel = data.alma_patients;
-  const pac = (Array.isArray(rel) ? rel[0] : rel) as {
-    nombre?: string;
-    apellido?: string;
-    telefono?: string;
-  } | null;
-  const nombreCompleto = nombrePaciente(rel) || 'Paciente';
+  const [{ data: pac }, { data: servicio }, { data: empleado }] = await Promise.all([
+    data.patient_id
+      ? supabase
+          .from('alma_patients')
+          .select('nombre, apellido, telefono')
+          .eq('id', data.patient_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    data.service_id
+      ? supabase.from('alma_services').select('nombre').eq('id', data.service_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    data.employee_id
+      ? supabase.from('alma_employees').select('nombre').eq('id', data.employee_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const nombreCompleto = nombrePaciente(pac) || 'Paciente';
   const estado = data.estado as Estado;
   const sena = Number(data.sena_monto);
 
@@ -129,14 +148,8 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
               )}
             </Dato>
           )}
-          {(() => {
-            const svc = data.alma_services as { nombre?: string } | null;
-            return svc?.nombre ? <Dato label="Servicio">{svc.nombre}</Dato> : null;
-          })()}
-          {(() => {
-            const emp = data.alma_employees as { nombre?: string } | null;
-            return emp?.nombre ? <Dato label="Empleado">{emp.nombre}</Dato> : null;
-          })()}
+          {servicio?.nombre ? <Dato label="Servicio">{servicio.nombre}</Dato> : null}
+          {empleado?.nombre ? <Dato label="Empleado">{empleado.nombre}</Dato> : null}
         </dl>
       </section>
 
