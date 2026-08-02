@@ -223,6 +223,38 @@ export async function toggleEmpleado(formData: FormData): Promise<void> {
   revalidatePath('/ajustes');
 }
 
+/**
+ * Baja definitiva de un empleado. Los turnos que atendió quedan sin empleado
+ * asignado (el FK es `on delete set null`): el historial no se toca. Sus
+ * horarios propios y las asignaciones a servicios sí se van con él (cascade).
+ * Para sacarlo de la lista sin borrar nada está el botón Activo/Inactivo.
+ */
+export async function eliminarEmpleado(
+  _prev: AjustesState,
+  formData: FormData,
+): Promise<AjustesState> {
+  const ctx = await getSessionContext();
+  if (!ctx) return { error: 'Tu sesión expiró. Volvé a entrar.' };
+
+  const parsed = z.object({ id: z.string().uuid() }).safeParse({ id: formData.get('id') });
+  if (!parsed.success) return { error: 'Empleado inválido.' };
+
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase
+    .from('alma_employees')
+    .delete()
+    .eq('id', parsed.data.id)
+    .eq('tenant_id', ctx.tenantId)
+    .select('id');
+  if (error) return { error: 'No pudimos eliminar el empleado.' };
+  if (!data?.length) return { error: 'No encontramos ese empleado.' };
+
+  revalidatePath('/ajustes');
+  revalidatePath('/agenda');
+  revalidatePath('/hoy');
+  return { info: 'Empleado eliminado.' };
+}
+
 // ─── Asignación empleados ↔ servicio ────────────────────
 
 export async function toggleEmpleadoServicio(formData: FormData): Promise<void> {

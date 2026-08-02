@@ -11,14 +11,18 @@ type Empleado = {
   activo: boolean;
 };
 
+type GuardarAction = (prev: AjustesState, formData: FormData) => Promise<AjustesState>;
+
 export function EmpleadosList({
   empleados,
   onGuardar,
   onToggle,
+  onEliminar,
 }: {
   empleados: Empleado[];
-  onGuardar: (prev: AjustesState, formData: FormData) => Promise<AjustesState>;
+  onGuardar: GuardarAction;
   onToggle: (formData: FormData) => Promise<void>;
+  onEliminar: GuardarAction;
 }) {
   const [editId, setEditId] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
@@ -60,46 +64,101 @@ export function EmpleadosList({
       ) : (
         <ul className="flex flex-col gap-1.5">
           {empleados.map((e) => (
-            <li
+            <EmpleadoFila
               key={e.id}
-              className="flex items-center gap-3 rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] px-3.5 py-3"
-            >
-              <span
-                className="h-3 w-3 shrink-0 rounded-full"
-                style={{ backgroundColor: e.color }}
-                aria-hidden="true"
-              />
-              <span className={`min-w-0 flex-1 text-sm font-medium ${!e.activo ? 'text-[var(--alma-text-muted)] line-through' : ''}`}>
-                {e.nombre}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  const form = new FormData();
-                  form.set('id', e.id);
-                  form.set('activo', String(!e.activo));
-                  onToggle(form);
-                }}
-                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors duration-micro ease-alma ${
-                  e.activo
-                    ? 'bg-[var(--success-soft)] text-[var(--success-600)]'
-                    : 'bg-[var(--error-soft)] text-[var(--error-600)]'
-                }`}
-              >
-                {e.activo ? 'Activo' : 'Inactivo'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditId(e.id)}
-                className="text-xs font-semibold text-[var(--alma-text-muted)] transition-opacity duration-micro ease-alma hover:opacity-80"
-              >
-                Editar
-              </button>
-            </li>
+              empleado={e}
+              onEditar={() => setEditId(e.id)}
+              onToggle={onToggle}
+              onEliminar={onEliminar}
+            />
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+/**
+ * Fila de un empleado. El borrado vive acá (y no en la lista) para que cada
+ * fila tenga su propio estado de acción y muestre su error donde corresponde.
+ */
+function EmpleadoFila({
+  empleado,
+  onEditar,
+  onToggle,
+  onEliminar,
+}: {
+  empleado: Empleado;
+  onEditar: () => void;
+  onToggle: (formData: FormData) => Promise<void>;
+  onEliminar: GuardarAction;
+}) {
+  const [state, formAction, pending] = useActionState(onEliminar, {});
+
+  return (
+    <li className="rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] px-3.5 py-3">
+      <div className="flex items-center gap-3">
+        <span
+          className="h-3 w-3 shrink-0 rounded-full"
+          style={{ backgroundColor: empleado.color }}
+          aria-hidden="true"
+        />
+        <span
+          className={`min-w-0 flex-1 truncate text-sm font-medium ${!empleado.activo ? 'text-[var(--alma-text-muted)] line-through' : ''}`}
+        >
+          {empleado.nombre}
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            const form = new FormData();
+            form.set('id', empleado.id);
+            form.set('activo', String(!empleado.activo));
+            onToggle(form);
+          }}
+          className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors duration-micro ease-alma ${
+            empleado.activo
+              ? 'bg-[var(--success-soft)] text-[var(--success-600)]'
+              : 'bg-[var(--error-soft)] text-[var(--error-600)]'
+          }`}
+        >
+          {empleado.activo ? 'Activo' : 'Inactivo'}
+        </button>
+        <button
+          type="button"
+          onClick={onEditar}
+          className="shrink-0 text-xs font-semibold text-[var(--alma-text-muted)] transition-opacity duration-micro ease-alma hover:opacity-80"
+        >
+          Editar
+        </button>
+        <form
+          action={formAction}
+          onSubmit={(ev) => {
+            if (
+              !confirm(
+                `¿Eliminar a ${empleado.nombre}? Los turnos que atendió quedan sin empleado asignado. No se puede deshacer.`,
+              )
+            ) {
+              ev.preventDefault();
+            }
+          }}
+        >
+          <input type="hidden" name="id" value={empleado.id} />
+          <button
+            type="submit"
+            disabled={pending}
+            className="shrink-0 text-xs font-semibold text-[var(--alma-text-muted)] transition-colors duration-micro ease-alma hover:text-[var(--error-600)] disabled:opacity-40"
+          >
+            {pending ? '…' : 'Eliminar'}
+          </button>
+        </form>
+      </div>
+      {state.error && (
+        <p role="alert" className="mt-1.5 text-sm text-[var(--error-600)]">
+          {state.error}
+        </p>
+      )}
+    </li>
   );
 }
 
