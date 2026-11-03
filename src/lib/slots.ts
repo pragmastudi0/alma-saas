@@ -94,7 +94,7 @@ export async function slotsDelDia(
   }
 
   // Turnos del día: filtrar por employee si corresponde
-  let turnosQuery = admin
+  const turnosQuery = admin
     .from('alma_appointments')
     .select('hora, duracion_min, employee_id')
     .eq('tenant_id', tenant.id)

@@ -3,7 +3,6 @@
  * Convierte turnos de alma en un formato compatible con Apple Calendar, Google Calendar, Outlook, etc.
  */
 
-import { format } from 'date-fns';
 import { addDias } from '@/lib/fecha';
 
 export interface CalendarEvent {
@@ -86,8 +85,8 @@ function generateICalEvent(event: CalendarEvent): string {
   const dtstart = toICalDateTime(event.fecha, event.hora);
   const fin = finDelEvento(event.fecha, event.hora, event.duracion_min);
   const dtend = toICalDateTime(fin.fecha, fin.hora);
-  const dtstamp = format(new Date(), "yyyyMMdd'T'HHmmss'Z'");
-  const lastModified = format(event.updated_at, "yyyyMMdd'T'HHmmss'Z'");
+  const lastModified = event.updated_at.toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
+  const dtstamp = lastModified;
 
   // Construir título y descripción
   const summary = event.servicio_nombre
@@ -143,8 +142,6 @@ export function generateICalendar(
   calendarName: string = 'Alma - Mi Agenda',
   timezone: string = 'America/Argentina/Buenos_Aires'
 ): string {
-  const now = format(new Date(), "yyyyMMdd'T'HHmmss'Z'");
-
   let ical = `BEGIN:VCALENDAR\r\n`;
   ical += `VERSION:2.0\r\n`;
   ical += `PRODID:-//alma//NONSGML Alma SaaS//EN\r\n`;
@@ -153,7 +150,6 @@ export function generateICalendar(
   ical += `X-WR-CALNAME:${calendarName}\r\n`;
   ical += `X-WR-TIMEZONE:${timezone}\r\n`;
   ical += `X-WR-CALDESC:Calendario de turnos sincronizado con Alma\r\n`;
-  ical += `DTSTAMP:${now}\r\n`;
 
   // Agregar todos los eventos
   for (const event of events) {
