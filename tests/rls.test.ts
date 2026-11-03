@@ -186,6 +186,101 @@ describe('aislamiento multi-tenant (RLS)', () => {
     expect(error !== null || data?.length === 0).toBe(true);
   });
 
+  it('un usuario borra sus turnos pero no los del otro tenant', async () => {
+    const [a, b] = users;
+
+    const { data: pacienteB } = await b.client
+      .from('alma_patients')
+      .insert({ tenant_id: b.tenantId, nombre: 'Paciente con turno' })
+      .select('id')
+      .single();
+
+    const { data: turnoB, error: insErr } = await b.client
+      .from('alma_appointments')
+      .insert({
+        tenant_id: b.tenantId,
+        patient_id: pacienteB!.id,
+        fecha: '2099-01-02',
+        hora: '10:00',
+        duracion_min: 30,
+        estado: 'confirmado',
+      })
+      .select('id')
+      .single();
+    expect(insErr).toBeNull();
+
+    // A intenta borrar el turno de B: RLS no alcanza ninguna fila
+    const { data: borradoPorA, error: delErr } = await a.client
+      .from('alma_appointments')
+      .delete()
+      .eq('id', turnoB!.id)
+      .select();
+    expect(delErr).toBeNull();
+    expect(borradoPorA).toEqual([]);
+
+    // el turno de B sigue en pie
+    const { data: sigue } = await b.client
+      .from('alma_appointments')
+      .select('id')
+      .eq('id', turnoB!.id);
+    expect(sigue).toHaveLength(1);
+
+    // B sí puede borrar el suyo
+    const { data: borradoPorB } = await b.client
+      .from('alma_appointments')
+      .delete()
+      .eq('id', turnoB!.id)
+      .select('id');
+    expect(borradoPorB?.map((t) => t.id)).toEqual([turnoB!.id]);
+  });
+
+  it('borrar un turno conserva el movimiento de caja, sin turno asociado', async () => {
+    const [a] = users;
+
+    const { data: paciente } = await a.client
+      .from('alma_patients')
+      .insert({ tenant_id: a.tenantId, nombre: 'Paciente cobrado' })
+      .select('id')
+      .single();
+
+    const { data: turno } = await a.client
+      .from('alma_appointments')
+      .insert({
+        tenant_id: a.tenantId,
+        patient_id: paciente!.id,
+        fecha: '2099-01-03',
+        hora: '09:00',
+        duracion_min: 30,
+        precio: 15000,
+        estado: 'completado',
+      })
+      .select('id')
+      .single();
+
+    const { data: movimiento } = await a.client
+      .from('alma_cash_entries')
+      .insert({
+        tenant_id: a.tenantId,
+        tipo: 'ingreso',
+        categoria: 'Turno',
+        monto: 15000,
+        appointment_id: turno!.id,
+      })
+      .select('id')
+      .single();
+
+    await a.client.from('alma_appointments').delete().eq('id', turno!.id);
+
+    // on delete set null: la plata cobrada no se borra con el turno
+    const { data: sigue } = await a.client
+      .from('alma_cash_entries')
+      .select('id, monto, appointment_id')
+      .eq('id', movimiento!.id)
+      .single();
+    expect(sigue?.appointment_id).toBeNull();
+    expect(Number(sigue?.monto)).toBe(15000);
+  });
+
   it('el cliente no puede escribir en alma_payments (reservado al servidor)', async () => {
     const [a] = users;
     const { error } = await a.client

@@ -3,6 +3,7 @@ import { TurnoForm } from '@/components/turno-form';
 import { BackLink } from '@/components/back-link';
 import { crearTurno, horariosDelDia } from '../actions';
 import { hoyISO } from '@/lib/fecha';
+import { nombrePaciente } from '@/lib/caja';
 import { montoSenaEfectivo, senaModoDe } from '@/lib/sena';
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
@@ -37,10 +38,25 @@ export default async function NuevoTurnoPage({
   const { d, p, svc, emp, precio, sena, origen } = await searchParams;
   const dia = d && FECHA.test(d) ? d : hoyISO();
 
+  // Paciente prellenado (al reprogramar). Validamos el uuid antes de meterlo en
+  // un filtro de PostgREST.
+  const pacienteIdPrefill = p && UUID.test(p) ? p : undefined;
+
   const supabase = await createServerSupabase();
+
+  // Los archivados no se ofrecen — salvo el prellenado, para que reprogramar un
+  // turno viejo siga funcionando.
+  const pacientesQuery = supabase
+    .from('alma_patients')
+    .select('id, nombre, apellido')
+    .order('nombre')
+    .order('apellido');
+
   const [{ data: pacientes }, { data: tenant }, { data: servicios }, { data: empleados }, { data: svcEmps }] =
     await Promise.all([
-      supabase.from('alma_patients').select('id, nombre').order('nombre'),
+      pacienteIdPrefill
+        ? pacientesQuery.or(`archivado.eq.false,id.eq.${pacienteIdPrefill}`)
+        : pacientesQuery.eq('archivado', false),
       supabase.from('alma_tenants').select('settings').maybeSingle(),
       supabase
         .from('alma_services')
@@ -56,6 +72,13 @@ export default async function NuevoTurnoPage({
         .from('alma_service_employees')
         .select('service_id, employee_id'),
     ]);
+
+  // En el selector va nombre y apellido: con solo el nombre, dos pacientes que
+  // se llaman igual son indistinguibles.
+  const opcionesPacientes = (pacientes ?? []).map((pa) => ({
+    id: pa.id,
+    nombre: nombrePaciente(pa) || 'Paciente',
+  }));
 
   // Armar mapa service_id → employee_ids
   const empPorServicio: Record<string, string[]> = {};
@@ -87,7 +110,7 @@ export default async function NuevoTurnoPage({
         action={crearTurno}
         submitLabel="Guardar turno"
         origen={origenId}
-        pacientes={pacientes ?? []}
+        pacientes={opcionesPacientes}
         servicios={servicios ?? []}
         empleados={empleados ?? []}
         empleadosPorServicio={empPorServicio}
@@ -99,7 +122,7 @@ export default async function NuevoTurnoPage({
           duracion_min: duracion,
           precio: precioPrefill,
           sena_monto: senaPrefill,
-          patient_id: p,
+          patient_id: pacienteIdPrefill,
           service_id: serviceId,
           employee_id: employeeId,
         }}

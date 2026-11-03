@@ -171,11 +171,16 @@ export default async function HoyPage() {
                   href={`/agenda/${t.id}`}
                   className="flex items-center gap-3 rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] px-3.5 py-3 transition-colors duration-micro ease-alma hover:border-[var(--alma-text-muted)]"
                 >
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{t.paciente}</span>
-                  <span className="shrink-0 text-xs capitalize text-[var(--alma-text-muted)]">
-                    {etiquetaDia(t.fecha)} · <span className="tnum">{t.hora}</span>
-                    {t.empleado && <span> · {t.empleado}</span>}
-                  </span>
+                  {/* El nombre se lleva la línea entera: el día y la hora van
+                      abajo, si no en pantallas angostas quedaba recortado. */}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{t.paciente}</p>
+                    <p className="mt-0.5 truncate text-xs text-[var(--alma-text-muted)]">
+                      <span className="capitalize">{etiquetaDia(t.fecha)}</span> ·{' '}
+                      <span className="tnum">{t.hora}</span>
+                      {t.empleado && <span> · {t.empleado}</span>}
+                    </p>
+                  </div>
                   <EstadoBadge estado={t.estado} />
                 </Link>
               </li>

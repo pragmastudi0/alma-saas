@@ -11,11 +11,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!ctx) redirect('/login');
 
   return (
-    <div className="flex min-h-screen w-full bg-[var(--alma-bg)]">
+    // En mobile el armazón ocupa la pantalla justa y no scrollea: lo que se
+    // mueve es el área de contenido, y la barra de abajo queda quieta de verdad
+    // (con `position: fixed` se despegaba al esconderse la barra del navegador).
+    // En desktop no cambia nada: scrollea la página y el sidebar es sticky.
+    <div className="flex w-full bg-[var(--alma-bg)] max-md:h-[100dvh] max-md:flex-col max-md:overflow-hidden md:min-h-screen">
       <SideNav />
 
-      <div className="flex-1 overflow-auto">
-        <div className="mx-auto w-full max-w-[1200px] px-[18px] pb-8 pt-4 md:px-8 md:pt-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
+      <div className="flex-1 overflow-auto max-md:min-h-0 max-md:overscroll-contain">
+        <div className="mx-auto w-full max-w-[1200px] px-[18px] pb-8 pt-4 md:px-8 md:pt-6 max-md:pb-24">
           {/* Barra superior: logo + campana + salir, solo en mobile (en desktop viven en el sidebar). */}
           <div className="mb-5 flex items-center justify-between md:hidden">
             <div className="flex items-center gap-2">
