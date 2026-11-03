@@ -28,7 +28,7 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
   // El turno se pide solo con sus columnas propias: los nombres de paciente,
   // servicio y empleado van aparte. Si una relación falla (o el tenant todavía
   // no tiene servicios), el turno igual se ve en vez de caer en un 404.
-  const [{ data, error }, { data: cuentaMp }, { data: tenant }] = await Promise.all([
+  const [{ data, error }, { data: cuentaMp }, { data: tenant }, { count: cobros }] = await Promise.all([
     supabase
       .from('alma_appointments')
       .select(
