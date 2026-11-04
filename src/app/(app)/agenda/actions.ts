@@ -13,6 +13,7 @@ import { registrarIngresoTurno, nombrePaciente } from '@/lib/caja';
 import { calcularSlots } from '@/lib/slots';
 import { diaSemanaDe } from '@/lib/fecha';
 import { syncToCalendar } from '@/lib/calendar-sync';
+import { montoConsultaSchema } from '@/lib/monto';
 import { estadoInicial, montoSenaEfectivo, permiteConfirmarSinSena, senaModoDe, type SenaModo } from '@/lib/sena';
 import type { AgendaState, Estado, MpLinkState, HorariosDia, TurnoOcupado } from '@/lib/turno';
 
@@ -29,7 +30,7 @@ const turnoBase = z.object({
   fecha: z.string().regex(FECHA, 'Elegí una fecha válida.'),
   hora: z.string().regex(HORA, 'Elegí un horario.'),
   duracion_min: z.coerce.number().int().positive('La duración tiene que ser mayor a cero.'),
-  precio: z.coerce.number().min(0, 'El precio no puede ser negativo.').default(0),
+  precio: montoConsultaSchema.default(0),
   sena_monto: z.coerce.number().min(0, 'La seña no puede ser negativa.').default(0),
   service_id: z.string().uuid().optional().or(z.literal('')),
   employee_id: z.string().uuid().optional().or(z.literal('')),

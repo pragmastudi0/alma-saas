@@ -47,6 +47,14 @@ export function IconoPacientes({ className }: { className?: string }) {
   );
 }
 
+export function IconoCumpleanos({ className }: { className?: string }) {
+  return (
+    <Icono className={className}>
+      <path d="M4 11h16v9H4zM3 11h18M12 11V7M8 15h1M15 15h1M12 15h1M9 7c-1.5 0-2-1-2-2s.7-2 2-2c1.7 0 3 4 3 4s1.3-4 3-4c1.3 0 2 1 2 2s-.5 2-2 2H9Z" />
+    </Icono>
+  );
+}
+
 export function IconoCaja({ className }: { className?: string }) {
   return (
     <Icono className={className}>
