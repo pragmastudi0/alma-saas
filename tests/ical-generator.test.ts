@@ -2,6 +2,21 @@ import { describe, it, expect } from 'vitest';
 import { generateICalendar, calculateICalHash, type CalendarEvent } from '@/lib/ical-generator';
 
 describe('iCal Generator', () => {
+  it('conserva UID, cambia DTEND al editar duración y mantiene estable el ETag sin cambios', () => {
+    const base: CalendarEvent = {
+      id: '550e8400-e29b-41d4-a716-446655440000', fecha: '2026-11-03', hora: '14:30',
+      duracion_min: 60, paciente_nombre: 'Ana', estado: 'confirmado',
+      updated_at: new Date('2026-11-03T17:30:00Z'),
+    };
+    const antes = generateICalendar([base]);
+    const repetido = generateICalendar([base]);
+    const despues = generateICalendar([{ ...base, duracion_min: 90, updated_at: new Date('2026-11-03T17:31:00Z') }]);
+    expect(calculateICalHash(antes)).toBe(calculateICalHash(repetido));
+    expect(antes).toContain('DTEND:20261103T153000');
+    expect(despues).toContain('DTEND:20261103T160000');
+    expect(despues.match(/UID:[^\r]+/)?.[0]).toBe(antes.match(/UID:[^\r]+/)?.[0]);
+    expect(calculateICalHash(antes)).not.toBe(calculateICalHash(despues));
+  });
   it('should generate valid iCal with single event', () => {
     const events: CalendarEvent[] = [
       {

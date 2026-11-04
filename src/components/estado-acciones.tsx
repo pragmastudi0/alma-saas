@@ -51,6 +51,7 @@ function Accion({
           {state.error}
         </p>
       )}
+      {state.info && <p role="status" className="mt-1.5 text-sm text-[var(--alma-text-muted)]">{state.info}</p>}
     </div>
   );
 }
@@ -84,6 +85,7 @@ function CancelarAvisando({ id, href }: { id: string; href: string }) {
           {state.error}
         </p>
       )}
+      {state.info && <p role="status" className="mt-1.5 text-sm text-[var(--alma-text-muted)]">{state.info}</p>}
     </div>
   );
 }

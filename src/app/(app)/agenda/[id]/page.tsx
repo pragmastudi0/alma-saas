@@ -11,6 +11,7 @@ import { horaCorta, pesos } from '@/lib/format';
 import { etiquetaDia } from '@/lib/fecha';
 import { senaModoDe } from '@/lib/sena';
 import type { Estado } from '@/lib/turno';
+import { GoogleSyncStatus } from '@/components/google-sync-status';
 
 function Dato({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -21,14 +22,18 @@ function Dato({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-export default async function TurnoDetallePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TurnoDetallePage({ params, searchParams }: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ google?: string }>;
+}) {
   const { id } = await params;
+  const { google } = await searchParams;
 
   const supabase = await createServerSupabase();
   // El turno se pide solo con sus columnas propias: los nombres de paciente,
   // servicio y empleado van aparte. Si una relación falla (o el tenant todavía
   // no tiene servicios), el turno igual se ve en vez de caer en un 404.
-  const [{ data, error }, { data: cuentaMp }, { data: tenant }, { count: cobros }] = await Promise.all([
+  const [{ data, error }, { data: cuentaMp }, { data: tenant }, { count: cobros }, { data: googleEvento }] = await Promise.all([
     supabase
       .from('alma_appointments')
       .select(
@@ -43,6 +48,7 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
       .from('alma_cash_entries')
       .select('id', { count: 'exact', head: true })
       .eq('appointment_id', id),
+    supabase.from('alma_google_calendar_events').select('sync_state').eq('appointment_id', id).maybeSingle(),
   ]);
 
   // Una consulta que falla no es un turno inexistente: si mostráramos "Nada por
@@ -118,6 +124,8 @@ export default async function TurnoDetallePage({ params }: { params: Promise<{ i
           {etiquetaDia(data.fecha)}
         </p>
       </header>
+
+      <GoogleSyncStatus id={data.id} fallo={google === 'error' || googleEvento?.sync_state === 'error'} />
 
       <section className="rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] p-5">
         <div className="flex items-start justify-between gap-3">
