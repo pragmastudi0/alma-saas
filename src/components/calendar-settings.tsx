@@ -5,15 +5,14 @@ import { Clipboard, Check } from 'lucide-react';
 
 interface CalendarSettingsProps {
   subscriptionToken?: string;
-  baseUrl: string;
 }
 
-export function CalendarSettings({ subscriptionToken, baseUrl }: CalendarSettingsProps) {
+export function CalendarSettings({ subscriptionToken }: CalendarSettingsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const [token, setToken] = useState(subscriptionToken);
-  const [icalUrl, setIcalUrl] = useState(subscriptionToken ? `${baseUrl}/api/calendars/ical/${subscriptionToken}` : '');
+  const [icalUrl, setIcalUrl] = useState(subscriptionToken ? `${window.location.origin}/api/calendars/ical/${subscriptionToken}` : '');
 
   async function generateSubscriptionUrl() {
     setIsLoading(true);
@@ -48,44 +47,44 @@ export function CalendarSettings({ subscriptionToken, baseUrl }: CalendarSetting
   }
 
   return (
-    <div className="space-y-6 rounded-lg border border-[var(--alma-border)] bg-[var(--alma-surface)] p-4">
+    <div className="space-y-6 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
       {/* Encabezado */}
       <div>
-        <h3 className="text-base font-semibold text-[var(--alma-text)]">Calendario por enlace</h3>
-        <p className="mt-1 text-sm text-[var(--alma-text-muted)]">
-          Compartí este enlace con Apple Calendar, Google Calendar u Outlook. Google actualiza las suscripciones según sus propios tiempos.
+        <h3 className="text-base font-semibold text-neutral-900">Sincronizar con Calendario</h3>
+        <p className="mt-1 text-sm text-neutral-500">
+          Tus turnos aparecerán automáticamente en Apple Calendar, Google Calendar, Outlook, etc.
         </p>
       </div>
 
       {/* Instrucciones iniciales */}
       {!token ? (
         <div className="space-y-4">
-          <div className="rounded bg-[var(--alma-action-soft)] p-3 text-sm text-[var(--alma-text)]">
+          <div className="rounded bg-green-50 p-3 text-sm text-green-900">
             <p>
               <strong>¿Cómo funciona?</strong>
             </p>
             <ul className="mt-2 list-inside list-disc space-y-1 text-xs">
               <li>Generamos una URL única con tus turnos</li>
-              <li>Agregala en tu calendario como suscripción</li>
-              <li>Los turnos se actualizan cuando ese calendario vuelve a consultar el enlace</li>
+              <li>La agregas a tu Apple Calendar como "Suscripción"</li>
+              <li>Los turnos se sincronizan automáticamente</li>
             </ul>
           </div>
 
           <button
             onClick={generateSubscriptionUrl}
             disabled={isLoading}
-            className="w-full rounded-md bg-[var(--alma-action)] px-4 py-3 text-sm font-semibold text-[var(--alma-on-action)] disabled:opacity-40"
+            className="w-full rounded-md bg-verde-600 px-4 py-2 text-sm font-medium text-white hover:bg-verde-700 disabled:opacity-50"
           >
-            {isLoading ? 'Generando…' : 'Generar enlace'}
+            {isLoading ? 'Generando...' : 'Agregar a Calendario'}
           </button>
 
-          {error && <div role="alert" className="text-sm text-[var(--error-600)]">{error}</div>}
+          {error && <div className="text-sm text-red-600">{error}</div>}
         </div>
       ) : (
         <div className="space-y-4">
           {/* URL generada */}
           <div>
-            <label className="block text-xs font-medium uppercase tracking-wider text-[var(--alma-text-muted)]">
+            <label className="block text-xs font-medium uppercase tracking-wider text-neutral-600">
               URL de tu calendario
             </label>
             <div className="mt-2 flex gap-2">
@@ -93,11 +92,11 @@ export function CalendarSettings({ subscriptionToken, baseUrl }: CalendarSetting
                 type="text"
                 readOnly
                 value={icalUrl}
-                className="flex-1 truncate rounded border border-[var(--alma-border)] bg-[var(--alma-bg)] px-3 py-2 text-sm text-[var(--alma-text)]"
+                className="flex-1 truncate rounded border border-neutral-200 bg-white px-3 py-2 text-sm font-mono text-neutral-700"
               />
               <button
                 onClick={copyToClipboard}
-                className="flex items-center gap-2 rounded border border-[var(--alma-action)] bg-[var(--alma-bg)] px-3 py-2 text-sm font-medium text-[var(--alma-action)]"
+                className="flex items-center gap-2 rounded border border-verde-600 bg-white px-3 py-2 text-sm font-medium text-verde-600 hover:bg-verde-50"
               >
                 {copied ? (
                   <>
@@ -115,22 +114,33 @@ export function CalendarSettings({ subscriptionToken, baseUrl }: CalendarSetting
           </div>
 
           {/* Instrucciones para Apple Calendar */}
-          <div className="rounded bg-[var(--info-soft)] p-3 text-sm">
-            <p className="font-medium text-[var(--alma-text)]">Para Apple Calendar:</p>
-            <ol className="mt-2 list-inside list-decimal space-y-1 text-xs text-[var(--alma-text-muted)]">
-              <li>Abrí la app Calendario</li>
-              <li>Elegí agregar un calendario por suscripción</li>
-              <li>Pegá la URL que copiaste arriba</li>
+          <div className="rounded bg-blue-50 p-3 text-sm">
+            <p className="font-medium text-blue-900">Para Apple Calendar (iPhone/iPad):</p>
+            <ol className="mt-2 list-inside list-decimal space-y-1 text-xs text-blue-800">
+              <li>Abre la app Calendario</li>
+              <li>Abajo a la derecha, toca el ícono "+"</li>
+              <li>Selecciona "Suscribirse a calendario"</li>
+              <li>Pega la URL que copiaste arriba</li>
+              <li>Listo: tus turnos aparecerán automáticamente</li>
             </ol>
           </div>
 
           {/* Instrucciones genéricas */}
-          <div className="rounded bg-[var(--alma-surface-2)] p-3 text-sm">
-            <p className="font-medium text-[var(--alma-text)]">Para otros calendarios:</p>
-            <p className="mt-1 text-xs text-[var(--alma-text-muted)]">
-              Podés usar esta URL en Google Calendar, Outlook y cualquier app que acepte iCal.
+          <div className="rounded bg-neutral-100 p-3 text-sm">
+            <p className="font-medium text-neutral-900">Para otros calendarios:</p>
+            <p className="mt-1 text-xs text-neutral-700">
+              Puedes usar esta URL en Google Calendar, Outlook, Thunderbird, y cualquier app que soporte iCal/CalDAV.
             </p>
           </div>
+
+          {/* Regenerar token */}
+          <button
+            onClick={generateSubscriptionUrl}
+            disabled={isLoading}
+            className="text-sm text-neutral-600 hover:text-neutral-900"
+          >
+            ↻ Regenerar URL (la anterior dejará de funcionar)
+          </button>
         </div>
       )}
     </div>

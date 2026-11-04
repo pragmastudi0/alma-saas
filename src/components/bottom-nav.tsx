@@ -21,7 +21,7 @@ export function BottomNav() {
       className="z-[var(--alma-z-nav)] shrink-0 border-t border-[var(--alma-border)] bg-[var(--alma-bg)] pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       <div className="grid grid-cols-6">
-        {NAV_ITEMS.filter((item) => item.href !== '/cumpleanos').map(({ href, label, Icono }) => {
+        {NAV_ITEMS.map(({ href, label, Icono }) => {
           const activo = pathname === href || pathname.startsWith(href + '/');
           return (
             <Link

@@ -12,12 +12,11 @@ import { SENA_MODO_DEFAULT, montoSenaEfectivo } from '@/lib/sena';
 import { INACTIVIDAD_DIAS_DEFAULT } from '@/lib/inactivos';
 import type { DisponibilidadDia, DisponibilidadState } from '@/lib/disponibilidad';
 import { SLUG_RE } from '@/lib/slug';
-import { montoConsultaSchema } from '@/lib/monto';
 
 const ajustesSchema = z.object({
   nombre: z.string().trim().min(1, 'Contanos cómo te llamás.').max(80),
   profesion: z.string().trim().max(60).default(''),
-  precio_default: montoConsultaSchema.default(0),
+  precio_default: z.coerce.number().min(0, 'El precio no puede ser negativo.').default(0),
   sena_modo: z.enum(['no', 'opcional', 'obligatoria']).default(SENA_MODO_DEFAULT),
   sena_default: z.coerce.number().min(0, 'La seña no puede ser negativa.').default(0),
   duracion_default: z.coerce.number().int().positive('La duración tiene que ser mayor a cero.'),
@@ -32,7 +31,6 @@ const ajustesSchema = z.object({
     .trim()
     .max(300, 'La plantilla puede tener hasta 300 caracteres.')
     .default(''),
-  plantilla_cumpleanos: z.string().trim().max(300, 'La plantilla puede tener hasta 300 caracteres.').default(''),
   alias_mp: z.string().trim().max(60).default(''),
   slug: z
     .string()
@@ -77,7 +75,6 @@ export async function guardarAjustes(
     duracion_default: v.duracion_default,
     inactividad_dias: v.inactividad_dias,
     plantilla_cancelacion: v.plantilla_cancelacion || null,
-    plantilla_cumpleanos: v.plantilla_cumpleanos || null,
     alias_mp: v.alias_mp || null,
   };
 
@@ -104,7 +101,7 @@ const servicioSchema = z.object({
   id: z.string().uuid().optional(),
   nombre: z.string().trim().min(1, 'Ponele un nombre al servicio.').max(80),
   descripcion: z.string().trim().max(200).default(''),
-  precio: montoConsultaSchema,
+  precio: z.coerce.number().min(0, 'El precio no puede ser negativo.'),
   duracion_min: z.coerce.number().int().positive('La duración tiene que ser mayor a cero.'),
   sena_monto: z.coerce.number().min(0, 'La seña no puede ser negativa.').default(0),
 });
@@ -296,16 +293,6 @@ export async function desconectarMp(): Promise<void> {
 
   revalidatePath('/ajustes');
   redirect('/ajustes?mp=desconectado');
-}
-
-export async function desconectarGoogle(): Promise<void> {
-  const ctx = await getSessionContext();
-  if (!ctx) redirect('/login');
-  const admin = createAdminSupabase();
-  const { error } = await admin.from('alma_google_calendar_accounts').delete().eq('tenant_id', ctx.tenantId);
-  if (error) redirect('/ajustes?google=error');
-  revalidatePath('/ajustes');
-  redirect('/ajustes?google=desconectado');
 }
 
 const HORA = /^\d{2}:\d{2}$/;

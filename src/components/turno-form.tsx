@@ -290,7 +290,7 @@ export function TurnoForm({
             name="precio"
             type="number"
             min={0}
-            step={1}
+            step={500}
             value={precio}
             onChange={(e) => setPrecio(e.target.value)}
             className={inputCls + ' tnum'}

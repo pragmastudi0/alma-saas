@@ -187,7 +187,7 @@ function ServicioForm({
             name="precio"
             type="number"
             min={0}
-            step={1}
+            step={500}
             required
             defaultValue={servicio?.precio ?? 0}
             className={inputCls + ' tnum'}

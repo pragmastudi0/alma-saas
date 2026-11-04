@@ -60,9 +60,9 @@ function MesToggle({ mv, ym }: { mv: 'cal' | 'lista'; ym: string }) {
 export default async function AgendaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ d?: string; v?: string; m?: string; mv?: string; emp?: string; google?: string }>;
+  searchParams: Promise<{ d?: string; v?: string; m?: string; mv?: string; emp?: string }>;
 }) {
-  const { d, v, m, mv: mvParam, emp, google } = await searchParams;
+  const { d, v, m, mv: mvParam, emp } = await searchParams;
   const dia = d && FECHA.test(d) ? d : hoyISO();
   const supabase = await createServerSupabase();
 
@@ -162,9 +162,6 @@ export default async function AgendaPage({
 
   return (
     <main className="pb-24 md:pb-8">
-      {google === 'error' && <p role="alert" className="mb-4 rounded-lg bg-[var(--error-soft)] p-3 text-sm text-[var(--error-600)]">
-        El turno se eliminó de ALMA, pero no pudimos actualizar Google Calendar.
-      </p>}
       <div className="mb-4 hidden justify-end md:flex">
         <AccionNueva href={`/agenda/nuevo?d=${dia}${employeeId ? `&emp=${employeeId}` : ''}`} label="Nuevo turno" />
       </div>

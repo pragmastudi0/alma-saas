@@ -288,46 +288,4 @@ describe('aislamiento multi-tenant (RLS)', () => {
       .insert({ tenant_id: a.tenantId, mp_id: 'test', monto: 100, status: 'approved' });
     expect(error).not.toBeNull();
   });
-
-  it('Google Calendar aísla cuentas y oculta tokens entre tenants', async () => {
-    const [a, b] = users;
-    const { error: insertError } = await admin.from('alma_google_calendar_accounts').insert({
-      tenant_id: a.tenantId,
-      access_token_enc: 'cifrado-prueba',
-      refresh_token_enc: 'cifrado-prueba',
-      expires_at: '2099-01-01T00:00:00Z',
-    });
-    expect(insertError).toBeNull();
-    const { data: propia } = await a.client.from('alma_google_calendar_accounts').select('tenant_id');
-    const { data: ajena } = await b.client.from('alma_google_calendar_accounts').select('tenant_id');
-    expect(propia?.map((fila) => fila.tenant_id)).toContain(a.tenantId);
-    expect(ajena).toEqual([]);
-    const { error: tokenError } = await a.client.from('alma_google_calendar_accounts').select('access_token_enc');
-    expect(tokenError).not.toBeNull();
-    const { error: writeError } = await a.client.from('alma_google_calendar_accounts').delete().eq('tenant_id', a.tenantId);
-    expect(writeError).not.toBeNull();
-  });
-
-  it('Google Calendar aísla los estados de eventos entre tenants', async () => {
-    const [a, b] = users;
-    const { data: paciente, error: pacienteError } = await a.client.from('alma_patients')
-      .insert({ tenant_id: a.tenantId, nombre: 'Paciente Calendario' }).select('id').single();
-    expect(pacienteError).toBeNull();
-    const { data: turno, error: turnoError } = await a.client.from('alma_appointments').insert({
-      tenant_id: a.tenantId, patient_id: paciente!.id, fecha: '2099-02-03', hora: '10:00',
-      duracion_min: 30, precio: 0, estado: 'confirmado',
-    }).select('id').single();
-    expect(turnoError).toBeNull();
-    const { error: insertError } = await admin.from('alma_google_calendar_events').insert({
-      tenant_id: a.tenantId, appointment_id: turno!.id, event_id: 'almaeventotest', sync_state: 'synced',
-    });
-    expect(insertError).toBeNull();
-    const { data: propia } = await a.client.from('alma_google_calendar_events').select('appointment_id, sync_state');
-    const { data: ajena } = await b.client.from('alma_google_calendar_events').select('appointment_id');
-    expect(propia?.map((fila) => fila.appointment_id)).toContain(turno!.id);
-    expect(ajena).toEqual([]);
-    const { error: writeError } = await a.client.from('alma_google_calendar_events')
-      .update({ sync_state: 'error' }).eq('appointment_id', turno!.id);
-    expect(writeError).not.toBeNull();
-  });
 });

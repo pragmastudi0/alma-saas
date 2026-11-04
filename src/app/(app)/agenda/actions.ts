@@ -13,8 +13,6 @@ import { registrarIngresoTurno, nombrePaciente } from '@/lib/caja';
 import { calcularSlots } from '@/lib/slots';
 import { diaSemanaDe } from '@/lib/fecha';
 import { syncToCalendar } from '@/lib/calendar-sync';
-import { sincronizarGoogle } from '@/lib/google-calendar';
-import { montoConsultaSchema } from '@/lib/monto';
 import { estadoInicial, montoSenaEfectivo, permiteConfirmarSinSena, senaModoDe, type SenaModo } from '@/lib/sena';
 import type { AgendaState, Estado, MpLinkState, HorariosDia, TurnoOcupado } from '@/lib/turno';
 
@@ -31,7 +29,7 @@ const turnoBase = z.object({
   fecha: z.string().regex(FECHA, 'Elegí una fecha válida.'),
   hora: z.string().regex(HORA, 'Elegí un horario.'),
   duracion_min: z.coerce.number().int().positive('La duración tiene que ser mayor a cero.'),
-  precio: montoConsultaSchema.default(0),
+  precio: z.coerce.number().min(0, 'El precio no puede ser negativo.').default(0),
   sena_monto: z.coerce.number().min(0, 'La seña no puede ser negativa.').default(0),
   service_id: z.string().uuid().optional().or(z.literal('')),
   employee_id: z.string().uuid().optional().or(z.literal('')),
@@ -149,15 +147,6 @@ export async function crearTurno(_prev: AgendaState, formData: FormData): Promis
     }
   }
 
-  let googleError = false;
-  if (estado === 'confirmado') {
-    try {
-      await sincronizarGoogle(ctx.tenantId, nuevo.id, 'CREATE');
-    } catch {
-      googleError = true;
-    }
-  }
-
   // Reprogramación: dejamos el turno original apuntando al nuevo. La guarda de
   // estado evita marcar por error un turno que no estaba cancelado/ausente.
   if (v.origen) {
@@ -172,7 +161,7 @@ export async function crearTurno(_prev: AgendaState, formData: FormData): Promis
 
   revalidatePath('/agenda');
   revalidatePath('/hoy');
-  redirect(googleError ? `/agenda/${nuevo.id}?google=error` : `/agenda?d=${v.fecha}`);
+  redirect(`/agenda?d=${v.fecha}`);
 }
 
 export async function editarTurno(_prev: AgendaState, formData: FormData): Promise<AgendaState> {
@@ -187,9 +176,6 @@ export async function editarTurno(_prev: AgendaState, formData: FormData): Promi
 
   const supabase = await createServerSupabase();
   const modo = await senaModoDelTenant(supabase);
-  const { data: anterior } = await supabase.from('alma_appointments')
-    .select('fecha, hora, duracion_min')
-    .eq('id', v.id).eq('tenant_id', ctx.tenantId).maybeSingle();
   const { data, error } = await supabase
     .from('alma_appointments')
     .update({
@@ -205,7 +191,6 @@ export async function editarTurno(_prev: AgendaState, formData: FormData): Promi
       mp_init_point: null,
     })
     .eq('id', v.id)
-    .eq('tenant_id', ctx.tenantId)
     .select('id');
   if (error?.code === '23P01') {
     return { error: 'Ese horario se superpone con otro turno. Probá otro.' };
@@ -215,17 +200,6 @@ export async function editarTurno(_prev: AgendaState, formData: FormData): Promi
   }
   if (!data?.length) {
     return { error: 'No encontramos ese turno.' };
-  }
-
-  // El turno ya quedó guardado en ALMA; Google se sincroniza después.
-  let googleError = false;
-  try {
-    const soloDuracion = !!anterior && anterior.fecha === v.fecha
-      && String(anterior.hora).slice(0, 5) === v.hora
-      && anterior.duracion_min !== v.duracion_min;
-    await sincronizarGoogle(ctx.tenantId, v.id, 'UPDATE', soloDuracion);
-  } catch {
-    googleError = true;
   }
 
   // Sincronizar cambios con calendarios
@@ -238,7 +212,7 @@ export async function editarTurno(_prev: AgendaState, formData: FormData): Promi
 
   revalidatePath('/agenda');
   revalidatePath('/hoy');
-  redirect(googleError ? `/agenda/${v.id}?google=error` : `/agenda/${v.id}`);
+  redirect(`/agenda/${v.id}`);
 }
 
 /**
@@ -272,14 +246,6 @@ export async function eliminarTurno(_prev: AgendaState, formData: FormData): Pro
   }
   if (!data?.length) {
     return { error: 'No encontramos ese turno.' };
-  }
-
-  try {
-    await sincronizarGoogle(ctx.tenantId, id, 'DELETE');
-  } catch {
-    // El turno ya no existe. La falla se indica en la agenda.
-    revalidatePath('/agenda');
-    redirect(`/agenda?d=${data[0].fecha}&google=error`);
   }
 
   try {
@@ -348,13 +314,6 @@ async function transicionar(
     }
   }
 
-  let googleError = false;
-  try {
-    await sincronizarGoogle(ctx.tenantId, parsed.data.id, 'UPDATE');
-  } catch {
-    googleError = true;
-  }
-
   // Sincronizar cambios con calendarios
   try {
     const newState = (cambios.estado as string) || 'confirmado';
@@ -374,25 +333,7 @@ async function transicionar(
   revalidatePath('/hoy');
   revalidatePath('/caja');
   revalidatePath('/agenda/[id]', 'page');
-  return { info: googleError ? 'Cambio guardado en ALMA; no se pudo sincronizar con Google.' : 'Listo.' };
-}
-
-export async function reintentarGoogle(_prev: AgendaState, formData: FormData): Promise<AgendaState> {
-  const ctx = await getSessionContext();
-  if (!ctx) redirect('/login');
-  const parsed = idSchema.safeParse({ id: formData.get('id') });
-  if (!parsed.success) return { error: 'Turno inválido.' };
-  const supabase = await createServerSupabase();
-  const { data } = await supabase.from('alma_appointments').select('id').eq('id', parsed.data.id).eq('tenant_id', ctx.tenantId).maybeSingle();
-  if (!data) return { error: 'No encontramos ese turno.' };
-  try {
-    const resultado = await sincronizarGoogle(ctx.tenantId, data.id, 'UPDATE');
-    if (resultado === 'sin_conexion') return { error: 'Conectá Google Calendar desde Ajustes.' };
-  } catch {
-    return { error: 'No pudimos sincronizar con Google. Probá de nuevo.' };
-  }
-  revalidatePath(`/agenda/${data.id}`);
-  return { info: 'Turno sincronizado con Google.' };
+  return { info: 'Listo.' };
 }
 
 /**

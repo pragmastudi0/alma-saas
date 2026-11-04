@@ -12,7 +12,6 @@
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { pesos } from '@/lib/format';
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -98,18 +97,6 @@ afterAll(async () => {
 });
 
 describe('superposición de turnos (trigger)', () => {
-  it('guarda y vuelve a leer $60.539 sin redondeo', async () => {
-    const [a] = users;
-    const { data: creado, error } = await a.client.from('alma_appointments')
-      .insert(turno(a, { fecha: '2026-08-07', hora: '08:00', precio: 60539 }))
-      .select('id, precio').single();
-    expect(error).toBeNull();
-    expect(Number(creado?.precio)).toBe(60539);
-    const { data: leido } = await a.client.from('alma_appointments')
-      .select('precio').eq('id', creado!.id).single();
-    expect(Number(leido?.precio)).toBe(60539);
-    expect(pesos(Number(leido?.precio))).toBe('$60.539');
-  });
   it('rechaza un turno que se solapa con otro activo', async () => {
     const [a] = users;
     const base = await a.client.from('alma_appointments').insert(turno(a, { hora: '09:00' }));

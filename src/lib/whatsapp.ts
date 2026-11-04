@@ -36,18 +36,6 @@ export function mensajeRecordatorio(nombre: string, fecha: string, hora: string)
 export const PLANTILLA_CANCELACION_DEFAULT =
   'Hola {nombre}! Te escribo porque tengo que cancelar tu turno del {fecha} a las {hora}. Contestame por acá y lo reprogramamos. ¡Perdón por las molestias!';
 
-export const PLANTILLA_CUMPLEANOS_DEFAULT =
-  '¡Feliz cumpleaños, {nombre}! Que tengas un lindo día. ¡Un abrazo!';
-
-export function mensajeCumpleanos(
-  plantilla: string,
-  datos: { nombre: string; apellido: string },
-): string {
-  return (plantilla.trim() || PLANTILLA_CUMPLEANOS_DEFAULT)
-    .replaceAll('{nombre}', datos.nombre)
-    .replaceAll('{apellido}', datos.apellido);
-}
-
 /**
  * Rinde la plantilla de cancelación reemplazando {nombre}, {fecha} y {hora}.
  * Si la plantilla está vacía, usa la de fábrica.

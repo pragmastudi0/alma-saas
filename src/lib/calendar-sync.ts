@@ -5,14 +5,6 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import type { CalendarEvent } from '@/lib/ical-generator';
-
-type RelacionNombre = { nombre: string | null } | { nombre: string | null }[] | null;
-type TurnoCalendario = Pick<CalendarEvent, 'id' | 'fecha' | 'hora' | 'duracion_min' | 'estado'> & {
-  updated_at: string;
-  alma_patients: RelacionNombre;
-  alma_services: RelacionNombre;
-};
 
 /**
  * Invalida el caché del feed iCal para un tenant
@@ -129,18 +121,14 @@ export async function getAppointmentsForCalendar(
     throw error;
   }
 
-  return ((data ?? []) as TurnoCalendario[]).map((apt) => {
-    const paciente = Array.isArray(apt.alma_patients) ? apt.alma_patients[0] : apt.alma_patients;
-    const servicio = Array.isArray(apt.alma_services) ? apt.alma_services[0] : apt.alma_services;
-    return {
-      id: apt.id,
-      fecha: apt.fecha,
-      hora: apt.hora,
-      duracion_min: apt.duracion_min,
-      paciente_nombre: paciente?.nombre || 'Sin nombre',
-      servicio_nombre: servicio?.nombre ?? undefined,
-      estado: apt.estado,
-      updated_at: new Date(apt.updated_at),
-    };
-  });
+  return (data ?? []).map((apt: any) => ({
+    id: apt.id,
+    fecha: apt.fecha,
+    hora: apt.hora,
+    duracion_min: apt.duracion_min,
+    paciente_nombre: apt.alma_patients?.nombre || 'Sin nombre',
+    servicio_nombre: apt.alma_services?.nombre,
+    estado: apt.estado,
+    updated_at: new Date(apt.updated_at),
+  }));
 }
