@@ -10,14 +10,30 @@ import { nombrePaciente } from '@/lib/caja';
 import { etiquetaDia, hoyISO } from '@/lib/fecha';
 import { pesos } from '@/lib/format';
 import { senaModoDe } from '@/lib/sena';
+import { cargarCumpleanos, type Cumpleanos } from '@/lib/cumpleanos';
+import { CumpleanosCard } from '@/components/cumpleanos-card';
+import { PLANTILLA_CUMPLEANOS_DEFAULT } from '@/lib/whatsapp';
 
 export default async function HoyPage() {
   const ctx = await getSessionContext();
   if (!ctx) redirect('/login');
 
-  const dia = hoyISO();
   const supabase = await createServerSupabase();
-  const [{ data }, { data: caja }, { data: futuros }, { data: tenant }] = await Promise.all([
+  const { data: tenantFecha, error: tenantFechaError } = await supabase
+    .from('alma_tenants').select('timezone, settings').eq('id', ctx.tenantId).single();
+  if (tenantFechaError || !tenantFecha) throw new Error('No pudimos cargar Hoy.');
+  const dia = hoyISO(tenantFecha.timezone);
+  let cumpleanosHoy: Cumpleanos[] = [];
+  let cumpleanosError = false;
+  try {
+    cumpleanosHoy = await cargarCumpleanos(supabase, ctx.tenantId, tenantFecha.timezone, 0);
+  } catch {
+    cumpleanosError = true;
+  }
+  const plantillaCumpleanos =
+    (tenantFecha.settings as { plantilla_cumpleanos?: string | null }).plantilla_cumpleanos
+    ?? PLANTILLA_CUMPLEANOS_DEFAULT;
+  const [{ data }, { data: caja }, { data: futuros }] = await Promise.all([
     supabase
       .from('alma_appointments')
       .select('id, hora, duracion_min, precio, estado, alma_patients(nombre, apellido), alma_employees(nombre)')
@@ -32,10 +48,9 @@ export default async function HoyPage() {
       .order('fecha', { ascending: true })
       .order('hora', { ascending: true })
       .limit(6),
-    supabase.from('alma_tenants').select('settings').maybeSingle(),
   ]);
 
-  const senaModo = senaModoDe(tenant?.settings);
+  const senaModo = senaModoDe(tenantFecha.settings);
 
   const ingresosHoy = (caja ?? [])
     .filter((c) => c.tipo === 'ingreso')
@@ -129,6 +144,20 @@ export default async function HoyPage() {
         )}
       </section>
       </div>
+
+      <section className="mt-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-xs font-semibold uppercase tracking-[.08em] text-[var(--alma-text-muted)]">Cumpleaños</h2>
+          <Link href="/cumpleanos" className="text-xs font-semibold text-[var(--alma-action)]">Ver cumpleaños</Link>
+        </div>
+        {cumpleanosHoy.length > 0 && (
+          <ul className="grid gap-2.5 sm:grid-cols-2">
+            {cumpleanosHoy.map((c) => <CumpleanosCard key={c.id} cumple={c} plantilla={plantillaCumpleanos} />)}
+          </ul>
+        )}
+        {cumpleanosError ? <p role="alert" className="text-sm text-[var(--error-600)]">No pudimos cargar los cumpleaños.</p> :
+          cumpleanosHoy.length === 0 && <p className="text-sm text-[var(--alma-text-muted)]">Hoy no hay cumpleaños.</p>}
+      </section>
 
       <section className="mt-6">
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-[.08em] text-[var(--alma-text-muted)]">

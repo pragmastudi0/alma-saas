@@ -8,7 +8,7 @@ import { MpConexion } from '@/components/mp-conexion';
 import { CalendarSettings } from '@/components/calendar-settings';
 import type { DisponibilidadDia } from '@/lib/disponibilidad';
 import { INACTIVIDAD_DIAS_DEFAULT } from '@/lib/inactivos';
-import { PLANTILLA_CANCELACION_DEFAULT } from '@/lib/whatsapp';
+import { PLANTILLA_CANCELACION_DEFAULT, PLANTILLA_CUMPLEANOS_DEFAULT } from '@/lib/whatsapp';
 import { siteUrl } from '@/lib/mp';
 import { slugificar } from '@/lib/slug';
 import { senaModoDe } from '@/lib/sena';
@@ -30,6 +30,7 @@ type Settings = {
   duracion_default?: number;
   inactividad_dias?: number;
   plantilla_cancelacion?: string | null;
+  plantilla_cumpleanos?: string | null;
   alias_mp?: string | null;
 };
 
@@ -130,6 +131,7 @@ export default async function AjustesPage({
           duracion_default: s.duracion_default ?? 45,
           inactividad_dias: s.inactividad_dias ?? INACTIVIDAD_DIAS_DEFAULT,
           plantilla_cancelacion: s.plantilla_cancelacion ?? PLANTILLA_CANCELACION_DEFAULT,
+          plantilla_cumpleanos: s.plantilla_cumpleanos ?? PLANTILLA_CUMPLEANOS_DEFAULT,
           alias_mp: s.alias_mp ?? '',
           slug: tenant?.slug ?? slugificar(tenant?.nombre ?? ''),
         }}

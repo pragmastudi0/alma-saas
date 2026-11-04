@@ -14,6 +14,7 @@ type Defaults = {
   duracion_default: number;
   inactividad_dias: number;
   plantilla_cancelacion: string;
+  plantilla_cumpleanos: string;
   alias_mp: string;
   slug: string;
 };
@@ -58,7 +59,7 @@ export function AjustesForm({
                 name="precio_default"
                 type="number"
                 min={0}
-                step={500}
+                step={1}
                 defaultValue={defaults.precio_default}
                 className={inputCls + ' tnum'}
               />
@@ -135,6 +136,20 @@ export function AjustesForm({
         />
         <span className="mt-1.5 block text-xs text-[var(--alma-text-muted)]">
           En Reportes te mostramos qué pacientes llevan más de estos días sin venir.
+        </span>
+      </label>
+
+      <label className="block border-t border-[var(--alma-border)] pt-4">
+        <span className={labelCls}>Mensaje de cumpleaños</span>
+        <textarea
+          name="plantilla_cumpleanos"
+          rows={3}
+          maxLength={300}
+          defaultValue={defaults.plantilla_cumpleanos}
+          className={inputCls}
+        />
+        <span className="mt-1.5 block text-xs text-[var(--alma-text-muted)]">
+          Usá {'{nombre}'} y {'{apellido}'} para personalizar el saludo que abrís en WhatsApp.
         </span>
       </label>
 
