@@ -295,6 +295,16 @@ export async function desconectarMp(): Promise<void> {
   redirect('/ajustes?mp=desconectado');
 }
 
+export async function desconectarGoogle(): Promise<void> {
+  const ctx = await getSessionContext();
+  if (!ctx) redirect('/login');
+  const admin = createAdminSupabase();
+  const { error } = await admin.from('alma_google_calendar_accounts').delete().eq('tenant_id', ctx.tenantId);
+  if (error) redirect('/ajustes?google=error');
+  revalidatePath('/ajustes');
+  redirect('/ajustes?google=desconectado');
+}
+
 const HORA = /^\d{2}:\d{2}$/;
 
 const disponibilidadSchema = z.array(

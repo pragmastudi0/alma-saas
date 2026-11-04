@@ -6,6 +6,8 @@ import { EmpleadosList } from '@/components/empleados-list';
 import { LinkPublico } from '@/components/link-publico';
 import { MpConexion } from '@/components/mp-conexion';
 import { CalendarSettings } from '@/components/calendar-settings';
+import { GoogleCalendarSettings } from '@/components/google-calendar-settings';
+import { googleConfigurado } from '@/lib/google-calendar';
 import type { DisponibilidadDia } from '@/lib/disponibilidad';
 import { INACTIVIDAD_DIAS_DEFAULT } from '@/lib/inactivos';
 import { PLANTILLA_CANCELACION_DEFAULT } from '@/lib/whatsapp';
@@ -44,11 +46,11 @@ const MENSAJES_MP: Record<string, { texto: string; error?: boolean }> = {
 export default async function AjustesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mp?: string }>;
+  searchParams: Promise<{ mp?: string; google?: string }>;
 }) {
-  const { mp } = await searchParams;
+  const { mp, google } = await searchParams;
   const supabase = await createServerSupabase();
-  const [{ data: tenant }, { data: dispo }, { data: cuentaMp }, { data: servicios }, { data: empleados }, { data: svcEmps }] =
+  const [{ data: tenant }, { data: dispo }, { data: cuentaMp }, { data: servicios }, { data: empleados }, { data: svcEmps }, { data: cuentaGoogle }, { data: suscripcion }] =
     await Promise.all([
       supabase.from('alma_tenants').select('nombre, profesion, settings, slug').maybeSingle(),
       supabase
@@ -67,6 +69,8 @@ export default async function AjustesPage({
       supabase
         .from('alma_service_employees')
         .select('service_id, employee_id'),
+      supabase.from('alma_google_calendar_accounts').select('tenant_id').maybeSingle(),
+      supabase.from('alma_calendar_subscriptions').select('subscription_token').maybeSingle(),
     ]);
 
   const empPorServicio: Record<string, string[]> = {};
@@ -116,7 +120,14 @@ export default async function AjustesPage({
         <p className="mb-3 text-xs font-semibold uppercase tracking-[.08em] text-[var(--alma-text-muted)]">
           Integraciones
         </p>
-        <CalendarSettings />
+        {google && <p role="status" className="mb-3 text-sm text-[var(--alma-text-muted)]">
+          {google === 'conectado' ? 'Google conectado. Preparando tus turnos futuros…' :
+            google === 'desconectado' ? 'Google desconectado.' :
+              google === 'sin_config' ? 'Falta configurar Google Calendar en el servidor.' :
+                'No pudimos conectar Google Calendar. Probá de nuevo.'}
+        </p>}
+        <GoogleCalendarSettings conectado={!!cuentaGoogle} iniciar={google === 'conectado'} configurado={googleConfigurado()} />
+        <CalendarSettings subscriptionToken={suscripcion?.subscription_token} baseUrl={siteUrl()} />
       </section>
 
       <AjustesForm
