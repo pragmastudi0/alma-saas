@@ -23,6 +23,7 @@ import {
   IconoPacientes,
   IconoAjustes,
 } from '@/components/icons';
+import { pesos } from '@/lib/format';
 
 type IconoComponent = ComponentType<{ className?: string }>;
 
@@ -85,7 +86,7 @@ export const FEATURES: Feature[] = [
 ];
 
 export const PRECIO = {
-  montoUSD: 30,
+  monto: pesos(39_999),
   periodo: 'mes',
   nota: 'Sin permanencia. Cancelás cuando quieras.',
   incluye: [
@@ -163,6 +164,6 @@ export const FAQ: { pregunta: string; respuesta: string }[] = [
   {
     pregunta: '¿El precio cambia?',
     respuesta:
-      'Son 30 USD por mes, sin permanencia. Sumamos funciones nuevas seguido y ya vienen incluidas.',
+      `Son ${PRECIO.monto} por ${PRECIO.periodo}, sin permanencia. Sumamos funciones nuevas seguido y ya vienen incluidas.`,
   },
 ];
