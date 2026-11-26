@@ -182,7 +182,7 @@ export function Landing() {
             </p>
             <p className="mt-3 flex items-end gap-1.5">
               <span className="voice text-[52px] leading-none tnum text-[var(--alma-text)]">
-                US${PRECIO.montoUSD}
+                {PRECIO.monto}
               </span>
               <span className="mb-1.5 text-sm font-medium text-[var(--alma-text-muted)]">
                 / {PRECIO.periodo}
